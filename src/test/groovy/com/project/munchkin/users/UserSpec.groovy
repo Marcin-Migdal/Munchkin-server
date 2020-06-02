@@ -1,4 +1,4 @@
-package com.project.munchkin.users
+package com.project.munchkin.user
 
 import com.project.munchkin.base.security.JwtTokenProvider
 import com.project.munchkin.users.domain.UserFacade

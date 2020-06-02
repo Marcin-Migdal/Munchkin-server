@@ -1,7 +1,7 @@
 package com.project.munchkin.base.security;
 
-import com.project.munchkin.users.model.User;
-import com.project.munchkin.users.repository.UserRepository;
+import com.project.munchkin.user.model.User;
+import com.project.munchkin.user.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
