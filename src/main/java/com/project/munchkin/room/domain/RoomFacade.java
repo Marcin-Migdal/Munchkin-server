@@ -32,6 +32,7 @@ public class RoomFacade {
         Room room = Room.builder()
                 .roomName(roomRequest.getRoomName())
                 .slots(roomRequest.getSlots())
+                .usersInRoom(1L)
                 .isComplete(false)
                 .user(userFacade.getUser(currentUser.getId()))
                 .roomPassword(roomRequest.getRoomPassword())
@@ -44,7 +45,7 @@ public class RoomFacade {
     public RoomResponse getRoomByRoomId(Long roomId) {
         RoomDto roomDto = roomRepository.findById(roomId)
                 .orElseThrow(() -> new ResourceNotFoundException("Room", "roomId", roomId)).dto();
-        return mapToRoomResponse(roomDto);
+        return mapRoomDtoToRoomResponse(roomDto);
     }
 
     public Page<RoomResponse> getAllRooms(int page, int pageSize) {
@@ -75,13 +76,15 @@ public class RoomFacade {
                 .id(roomDto.getId())
                 .roomName(roomDto.getRoomName())
                 .slots(roomDto.getSlots())
+                .usersInRoom(roomDto.getUsersInRoom())
                 .isComplete(roomDto.isComplete())
-                .creatorName(roomDto.getUser().getUsername())
+                .creatorId(roomDto.getUser().getId())
                 .roomPassword(roomDto.getRoomPassword())
                 .build();
     }
 
-    private RoomResponse mapToRoomResponse(RoomDto roomDto) {
-        return mapRoomDtoToRoomResponse(roomDto);
+    public Room getRoomEntity(Long roomId) {
+        return roomRepository.findById(roomId)
+                .orElseThrow(() -> new ResourceNotFoundException("Room", "roomId", roomId));
     }
 }

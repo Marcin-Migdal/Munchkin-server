@@ -31,10 +31,13 @@ public class Room extends DateAudit {
     Long slots;
 
     @NotNull
+    Long usersInRoom;
+
+    @NotNull
     boolean isComplete;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "createdBy", nullable = false)
+    @JoinColumn(name = "created_by", nullable = false)
     User user;
 
     @NotNull
@@ -45,6 +48,7 @@ public class Room extends DateAudit {
                 .id(roomDto.getId())
                 .roomName(roomDto.getRoomName())
                 .slots(roomDto.getSlots())
+                .usersInRoom(roomDto.getUsersInRoom())
                 .isComplete(roomDto.isComplete)
                 .user(roomDto.getUser())
                 .roomPassword(roomDto.getRoomPassword())
@@ -56,6 +60,7 @@ public class Room extends DateAudit {
                 .id(id)
                 .roomName(roomName)
                 .slots(slots)
+                .usersInRoom(usersInRoom)
                 .isComplete(isComplete)
                 .user(user)
                 .roomPassword(roomPassword)
@@ -67,8 +72,9 @@ public class Room extends DateAudit {
                 .id(id)
                 .roomName(roomName)
                 .slots(slots)
+                .usersInRoom(usersInRoom)
                 .isComplete(isComplete)
-                .creatorName(user.getUsername())
+                .creatorId(user.getId())
                 .roomPassword(roomPassword)
                 .build();
     }

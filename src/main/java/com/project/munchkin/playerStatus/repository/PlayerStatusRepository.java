@@ -1,0 +1,16 @@
+package com.project.munchkin.playerStatus.repository;
+
+import com.project.munchkin.playerStatus.model.PlayerStatus;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface PlayerStatusRepository extends JpaRepository<PlayerStatus, Long> {
+
+    @Query("SELECT u FROM PlayerStatus u WHERE u.roomId = ?1 and u.userId = ?2")
+    Optional<PlayerStatus> findByRoomIdAndUserId(Long roomId, Long userId);
+
+}

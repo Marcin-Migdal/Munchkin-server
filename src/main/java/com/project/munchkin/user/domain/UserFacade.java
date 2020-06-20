@@ -54,7 +54,7 @@ public class UserFacade {
         }
 
         User user = new User(signUpRequest.getInGameName(), signUpRequest.getUsername(),
-                signUpRequest.getEmail(), signUpRequest.getUserPassword(), signUpRequest.getIconUrl());
+                signUpRequest.getEmail(), signUpRequest.getUserPassword(), signUpRequest.getIconUrl(), signUpRequest.getGender());;
 
         user.setUserPassword(passwordEncoder.encode(user.getUserPassword()));
 

@@ -12,7 +12,8 @@ public class RoomResponse {
     Long id;
     String roomName;
     Long slots;
-    String creatorName;
+    Long usersInRoom;
+    Long creatorId;
     String roomPassword;
     boolean isComplete;
 }

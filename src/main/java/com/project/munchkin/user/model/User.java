@@ -1,9 +1,6 @@
 package com.project.munchkin.user.model;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.NaturalId;
 
@@ -23,6 +20,7 @@ import javax.validation.constraints.Size;
 })
 @Getter
 @Setter
+@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @NoArgsConstructor
 public class User extends DateAudit {
@@ -51,20 +49,25 @@ public class User extends DateAudit {
     @NotBlank
     String iconUrl;
 
-    public User(String inGameName, String username, String email, String userPassword, String iconUrl) {
+    @NotBlank
+    String gender;
+
+    public User(String inGameName, String username, String email, String userPassword, String iconUrl, String gender) {
         this.inGameName = inGameName;
         this.username = username;
         this.email = email;
         this.userPassword = userPassword;
         this.iconUrl = iconUrl;
+        this.gender = gender;
     }
 
-    public User(Long id, String inGameName, String username, String email, String userPassword) {
+    public User(Long id, String inGameName, String username, String email, String userPassword, String iconUrl, String gender) {
         this.id = id;
         this.inGameName = inGameName;
         this.username = username;
         this.email = email;
         this.userPassword = userPassword;
         this.iconUrl = iconUrl;
+        this.gender = gender;
     }
 }
