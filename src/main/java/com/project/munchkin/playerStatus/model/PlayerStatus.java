@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 @Entity
@@ -42,6 +43,9 @@ public class PlayerStatus {
     @NotNull
     Boolean playerInRoom;
 
+    @NotBlank
+    String gender;
+
     public static PlayerStatus fromDto(PlayerStatusDto playerStatusDto) {
         return PlayerStatus.builder()
                 .id(playerStatusDto.getId())
@@ -52,6 +56,7 @@ public class PlayerStatus {
                 .playerLevel(playerStatusDto.getPlayerLevel())
                 .playerBonus(playerStatusDto.getPlayerBonus())
                 .playerInRoom(playerStatusDto.getPlayerInRoom())
+                .gender(playerStatusDto.gender)
                 .build();
     }
 
@@ -65,6 +70,7 @@ public class PlayerStatus {
                 .playerLevel(playerLevel)
                 .playerBonus(playerBonus)
                 .playerInRoom(playerInRoom)
+                .gender(gender)
                 .build();
     }
 }

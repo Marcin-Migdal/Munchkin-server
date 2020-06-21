@@ -19,4 +19,5 @@ public class PlayerStatusResponse {
     PlayerRaceDto playerRaceDto;
     Long playerLevel;
     Long playerBonus;
+    String gender;
 }

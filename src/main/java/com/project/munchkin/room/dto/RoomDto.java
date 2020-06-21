@@ -7,7 +7,6 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @Getter
 @Setter
-@EqualsAndHashCode
 @FieldDefaults(level = AccessLevel.PUBLIC)
 public class RoomDto {
     Long id;

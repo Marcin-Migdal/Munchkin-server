@@ -16,8 +16,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import javax.validation.Valid;
-
 @Service
 @Builder
 public class RoomFacade {
@@ -54,7 +52,7 @@ public class RoomFacade {
         return rooms.map(Room::response);
     }
 
-    public RoomResponse editRoom(@Valid RoomUpdateRequest roomUpdateRequest) {
+    public RoomResponse editRoom(RoomUpdateRequest roomUpdateRequest) {
         RoomDto roomDto = roomRepository.findById(roomUpdateRequest.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Room", "roomId", roomUpdateRequest.getId())).dto();
 
@@ -71,6 +69,16 @@ public class RoomFacade {
         roomRepository.deleteById(roomId);
     }
 
+    public RoomDto getRoomDto(Long roomId) {
+        return roomRepository.findById(roomId)
+                .orElseThrow(() -> new ResourceNotFoundException("Room", "roomId", roomId)).dto();
+    }
+
+    public void usersInRoomUpdate(RoomDto roomDto) {
+        Room room = Room.fromDto(roomDto);
+        roomRepository.save(room);
+    }
+
     private RoomResponse mapRoomDtoToRoomResponse(RoomDto roomDto) {
         return RoomResponse.builder()
                 .id(roomDto.getId())
@@ -83,8 +91,7 @@ public class RoomFacade {
                 .build();
     }
 
-    public Room getRoomEntity(Long roomId) {
-        return roomRepository.findById(roomId)
-                .orElseThrow(() -> new ResourceNotFoundException("Room", "roomId", roomId));
+    public boolean roomFull(Long roomId) {
+        return roomRepository.isRoomFull(roomId);
     }
 }

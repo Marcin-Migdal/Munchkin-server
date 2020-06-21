@@ -6,7 +6,6 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @Getter
 @Setter
-@EqualsAndHashCode
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class RoomResponse {
     Long id;

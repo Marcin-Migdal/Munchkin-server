@@ -55,4 +55,6 @@ public class RoomController {
     public RoomResponse editRoom(@Valid @RequestBody RoomUpdateRequest roomUpdateRequest) {
         return roomFacade.editRoom(roomUpdateRequest);
     }
+
+
 }

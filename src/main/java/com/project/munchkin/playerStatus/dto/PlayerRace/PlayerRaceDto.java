@@ -6,7 +6,6 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @Getter
 @Setter
-@EqualsAndHashCode
 @FieldDefaults(level = AccessLevel.PUBLIC)
 public class PlayerRaceDto {
     Long id;

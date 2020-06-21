@@ -19,4 +19,5 @@ public class PlayerStatusDto {
     Long playerLevel;
     Long playerBonus;
     Boolean playerInRoom;
+    String gender;
 }
