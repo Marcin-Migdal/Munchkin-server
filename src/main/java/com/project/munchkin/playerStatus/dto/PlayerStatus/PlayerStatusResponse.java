@@ -13,6 +13,7 @@ import lombok.experimental.FieldDefaults;
 @Setter
 @FieldDefaults(level = AccessLevel.PUBLIC)
 public class PlayerStatusResponse {
+    Long playerStatusId;
     Long userId;
     String userName;
     PlayerClassDto playerClassDto;

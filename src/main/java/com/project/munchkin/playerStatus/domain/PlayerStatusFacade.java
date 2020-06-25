@@ -3,6 +3,7 @@ package com.project.munchkin.playerStatus.domain;
 import com.project.munchkin.base.security.UserPrincipal;
 import com.project.munchkin.playerStatus.dto.PlayerClass.PlayerClassDto;
 import com.project.munchkin.playerStatus.dto.PlayerRace.PlayerRaceDto;
+import com.project.munchkin.playerStatus.dto.PlayerStatus.PlayerStatusDto;
 import com.project.munchkin.playerStatus.dto.PlayerStatus.PlayerStatusResponse;
 import com.project.munchkin.playerStatus.model.PlayerClass;
 import com.project.munchkin.playerStatus.model.PlayerRace;
@@ -68,9 +69,27 @@ public class PlayerStatusFacade {
         return playerClassDtos;
     }
 
-    public PlayerStatusResponse getPlayerStatus(Long roomId , UserPrincipal currentUser) {
-        PlayerStatus playerStatusEntity = getPlayerStatusEntity(roomId, currentUser.getId());
+    public PlayerStatusResponse getPlayerStatusByRoomId(Long roomId , UserPrincipal currentUser) {
+        PlayerStatus playerStatusEntity = getPlayerStatusEntityByRoomId(roomId, currentUser.getId());
         return toPlayerStatusResponse(playerStatusEntity);
+    }
+
+    public PlayerStatusResponse getPlayerStatusById(Long playerStatusId) {
+        PlayerStatus playerStatus = getPlayerStatusEntityById(playerStatusId);
+        return toPlayerStatusResponse(playerStatus);
+    }
+
+    public List<PlayerStatusResponse> getAllPlayersStatusesInRoom(Long roomId) {
+        List<PlayerStatusResponse> allPlayersStatuses = playerStatusRepository.findAllPlayerStatusByRoomId(roomId)
+                .stream()
+                .map(item -> toPlayerStatusResponse(item))
+                .collect(Collectors.toList());
+
+        if(allPlayersStatuses.isEmpty()){
+            throw new ResourceNotFoundException("Players Statuses","roomId", roomId);
+        }
+
+        return allPlayersStatuses;
     }
 
     public ResponseEntity joinRoom(Long roomId, String roomPassword, UserPrincipal currentUser) {
@@ -87,15 +106,15 @@ public class PlayerStatusFacade {
         RoomDto roomDto = roomFacade.getRoomDto(roomId);
         if (roomDto.getRoomPassword().equals(roomPassword)) {
             try {
-                PlayerStatus playerStatus = getPlayerStatusEntity(roomId, currentUser.getId());
-                playerStatus.setPlayerInRoom(true);
-                updatePlayerInRoomAndUserInRoom(roomDto, playerStatus, true);
+                PlayerStatusDto playerStatusDto = getPlayerStatusEntityByRoomId(roomId, currentUser.getId()).dto();
+                playerStatusDto.setPlayerInRoom(true);
+                updatePlayerInRoomAndUserInRoom(roomDto, playerStatusDto, true);
 
                 return ResponseEntity.ok("User joined room with id: " + roomId);
 
             } catch (ResourceNotFoundException e) {
-                PlayerStatus playerStatus = createDefaultPlayerStatus(roomId, currentUser);
-                updatePlayerInRoomAndUserInRoom(roomDto, playerStatus, true);
+                PlayerStatusDto playerStatusDto = createDefaultPlayerStatus(roomId, currentUser).dto();
+                updatePlayerInRoomAndUserInRoom(roomDto, playerStatusDto, true);
 
                 return ResponseEntity.ok("player status was created and user joined room with id: " + roomId);
             }
@@ -104,28 +123,111 @@ public class PlayerStatusFacade {
         }
     }
 
-    public ResponseEntity exitRoom(Long roomId, UserPrincipal currentUser) {
+    public void exitRoom(Long roomId, Long playerStatusId) {
         RoomDto roomDto = roomFacade.getRoomDto(roomId);
-        PlayerStatus playerStatus = getPlayerStatusEntity(roomId, currentUser.getId());
-        playerStatus.setPlayerInRoom(false);
+        PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(playerStatusId).dto();
+        playerStatusDto.setPlayerInRoom(false);
 
-        updatePlayerInRoomAndUserInRoom(roomDto ,playerStatus, false);
-
-        return ResponseEntity.ok("player leaved room: " + roomId);
+        updatePlayerInRoomAndUserInRoom(roomDto ,playerStatusDto, false);
     }
 
-    private PlayerStatus getPlayerStatusEntity(Long roomId, Long userId) {
+    public ResponseEntity setPlayerLevel(Long playerStatusId, Long upOrDown) {
+        PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(playerStatusId).dto();
+
+        if(playerStatusDto.getPlayerLevel() + upOrDown < 0){
+            return ResponseEntity.ok("Player level can't be lower then 0");
+        }
+
+        playerStatusDto.setPlayerLevel(playerStatusDto.getPlayerLevel() + upOrDown);
+        playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
+
+        if (playerStatusDto.getPlayerLevel() + upOrDown > 9){
+            roomFacade.roomIsCompleted(playerStatusDto.getRoomId());
+            return ResponseEntity.ok("Player achieved level 10, game is over");
+        }
+
+        return  ResponseEntity.ok("player level set successfully");
+    }
+
+    public ResponseEntity setPlayerBonus(Long playerStatusId, Long upOrDown) {
+        PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(playerStatusId).dto();
+
+        if(playerStatusDto.getPlayerBonus() + upOrDown < 0){
+            return ResponseEntity.ok("Player bonus can't be lower then 0");
+        }
+
+        playerStatusDto.setPlayerBonus(playerStatusDto.getPlayerBonus() + upOrDown);
+        playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
+        return  ResponseEntity.ok("player bonus set successfully");
+    }
+
+    public void changeGender(Long playerStatusId) {
+        PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(playerStatusId).dto();
+        String newGender = playerStatusDto.getGender().equals("men")  ? "women" : "men";
+        playerStatusDto.setGender(newGender);
+        playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
+    }
+
+    public void changeRace(Long playerStatusId, Long raceId) {
+        PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(playerStatusId).dto();
+
+        playerStatusDto.setRaceId(raceId);
+        playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
+    }
+
+    public void changeClass(Long playerStatusId, Long classId) {
+        PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(playerStatusId).dto();
+
+        playerStatusDto.setClassId(classId);
+        playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
+    }
+
+    public void deletePlayerStatus(Long playerStatusId) {
+        PlayerStatus playerStatus = getPlayerStatusEntityById(playerStatusId);
+        RoomDto roomDto = roomFacade.getRoomDto(playerStatus.getRoomId());
+        roomDto.setUsersInRoom(roomDto.getUsersInRoom() - 1L);
+        roomFacade.usersInRoomUpdate(roomDto);
+        playerStatusRepository.delete(playerStatus);
+    }
+
+    public ResponseEntity deletePlayersStatuses(Long roomId) {
+        List<PlayerStatus> allPlayersStatuses = playerStatusRepository.findAllPlayerStatusByRoomId(roomId);
+
+        if (allPlayersStatuses.isEmpty()){
+            return ResponseEntity.ok("No player statuses was found");
+        }
+
+        RoomDto roomDto = roomFacade.getRoomDto(roomId);
+        roomDto.setUsersInRoom(0L);
+        roomFacade.usersInRoomUpdate(roomDto);
+        playerStatusRepository.deleteAll(allPlayersStatuses);
+
+        return ResponseEntity.ok("All statuses in the room were deleted");
+    }
+
+
+    public void deleteRoom(Long roomId) {
+        roomFacade.deleteById(roomId);
+        deletePlayersStatuses(roomId);
+    }
+
+    private PlayerStatus getPlayerStatusEntityByRoomId(Long roomId, Long userId) {
         return playerStatusRepository.findByRoomIdAndUserId(roomId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Player Status", "roomId and userId", roomId));
     }
 
-    private void updatePlayerInRoomAndUserInRoom(RoomDto roomDto, PlayerStatus playerStatus, boolean joingOrLeaving) {
-        if(joingOrLeaving){
-            playerStatusRepository.save(playerStatus);
+    private PlayerStatus getPlayerStatusEntityById(Long playerStatusId) {
+        return playerStatusRepository.findById(playerStatusId)
+                .orElseThrow(() -> new ResourceNotFoundException("Player Status","playerStatusId", playerStatusId));
+    }
+
+    private void updatePlayerInRoomAndUserInRoom(RoomDto roomDto, PlayerStatusDto playerStatusDto, boolean joiningOrLeaving) {
+        if(joiningOrLeaving){
+            playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
             roomDto.setUsersInRoom(roomDto.getUsersInRoom() + 1L);
             roomFacade.usersInRoomUpdate(roomDto);
         }else{
-            playerStatusRepository.save(playerStatus);
+            playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
             roomDto.setUsersInRoom(roomDto.getUsersInRoom() - 1L);
             roomFacade.usersInRoomUpdate(roomDto);
         }
@@ -133,6 +235,7 @@ public class PlayerStatusFacade {
 
     private PlayerStatusResponse toPlayerStatusResponse(PlayerStatus playerStatus) {
         return PlayerStatusResponse.builder()
+                .playerStatusId(playerStatus.getId())
                 .userId(playerStatus.getUserId())
                 .userName(userFacade.getUser(playerStatus.getUserId()).getUsername())
                 .playerClassDto(getPlayerClass(playerStatus.getClassId()))
@@ -156,43 +259,5 @@ public class PlayerStatusFacade {
                 .gender(userFacade.getUser(currentUser.getId()).getGender())
                 .build();
         return playerStatus;
-    }
-
-    public ResponseEntity setPlayerLevel(Long roomId, Long upOrDown, UserPrincipal currentUser) {
-        PlayerStatus playerStatus = getPlayerStatusEntity(roomId, currentUser.getId());
-
-        if(playerStatus.getPlayerLevel() + upOrDown < 0){
-            return ResponseEntity.ok("Player level can't be lower then 0");
-        }
-
-        playerStatus.setPlayerLevel(playerStatus.getPlayerLevel() + upOrDown);
-        playerStatusRepository.save(playerStatus);
-
-        if (playerStatus.getPlayerLevel() + upOrDown > 9){
-            //dorobić zakończenie gry
-            return ResponseEntity.ok("Player achieved level 10, game is over");
-        }
-
-        return  ResponseEntity.ok("player level set successfully");
-    }
-
-    public ResponseEntity setPlayerBonus(Long roomId, Long upOrDown, UserPrincipal currentUser) {
-        PlayerStatus playerStatus = getPlayerStatusEntity(roomId, currentUser.getId());
-
-        if(playerStatus.getPlayerBonus() + upOrDown < 0){
-            return ResponseEntity.ok("Player bonus can't be lower then 0");
-        }
-
-        playerStatus.setPlayerBonus(playerStatus.getPlayerBonus() + upOrDown);
-        playerStatusRepository.save(playerStatus);
-        return  ResponseEntity.ok("player bonus set successfully");
-    }
-
-    public ResponseEntity changeGender(Long roomId, UserPrincipal currentUser) {
-        PlayerStatus playerStatus = getPlayerStatusEntity(roomId, currentUser.getId());
-        String newGender = playerStatus.getGender().equals("men")  ? "women" : "men";
-        playerStatus.setGender(newGender);
-        playerStatusRepository.save(playerStatus);
-        return ResponseEntity.ok("Gender was changed successfully to: " + newGender);
     }
 }

@@ -7,10 +7,7 @@ import com.project.munchkin.playerStatus.dto.PlayerRace.PlayerRaceDto;
 import com.project.munchkin.playerStatus.dto.PlayerStatus.PlayerStatusResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -41,9 +38,19 @@ public class PlayerStatusController {
         return playerStatusFacade.getAllPlayerClasses();
     }
 
-    @GetMapping("/status/byId/{roomId}")
-    public PlayerStatusResponse getPlayerStatus(@PathVariable Long roomId, @CurrentUser UserPrincipal currentUser){
-        return playerStatusFacade.getPlayerStatus(roomId, currentUser);
+    @GetMapping("/status/byRoomId/{roomId}")
+    public PlayerStatusResponse getPlayerStatusByRoomId(@PathVariable Long roomId, @CurrentUser UserPrincipal currentUser){
+        return playerStatusFacade.getPlayerStatusByRoomId(roomId, currentUser);
+    }
+
+    @GetMapping("/status/byPlayerStatusId/{playerStatusId}")
+    public PlayerStatusResponse getPlayerStatusById(@PathVariable Long playerStatusId){
+        return playerStatusFacade.getPlayerStatusById(playerStatusId);
+    }
+
+    @GetMapping("/status/allPlayersStatuses/{roomId}")
+    public List<PlayerStatusResponse> getAllPlayersStatuses(@PathVariable Long roomId){
+        return playerStatusFacade.getAllPlayersStatusesInRoom(roomId);
     }
 
     @GetMapping("join/{roomId}/{roomPassword}")
@@ -52,27 +59,58 @@ public class PlayerStatusController {
         return responseEntity;
     }
 
-    @GetMapping("exit/{roomId}")
-    public ResponseEntity<?> exitRoom (@PathVariable Long roomId, @CurrentUser UserPrincipal currentUser){
-        ResponseEntity responseEntity = playerStatusFacade.exitRoom(roomId, currentUser);
-        return responseEntity;
+    @GetMapping("exit/{roomId}/{playerStatusId}")
+    public ResponseEntity<?> exitRoom (@PathVariable Long roomId, @PathVariable Long playerStatusId){
+        playerStatusFacade.exitRoom(roomId, playerStatusId);
+        return ResponseEntity.ok("Player leaved room");
     }
 
     @GetMapping("/setLevel/{roomId}/{upOrDown}")
-    public ResponseEntity<?> setPlayerLevel (@PathVariable Long roomId, @PathVariable Long upOrDown, @CurrentUser UserPrincipal currentUser){
-        ResponseEntity responseEntity = playerStatusFacade.setPlayerLevel(roomId, upOrDown, currentUser);
+    public ResponseEntity<?> setPlayerLevel (@PathVariable Long playerStatusId, @PathVariable Long upOrDown){
+        ResponseEntity responseEntity = playerStatusFacade.setPlayerLevel(playerStatusId, upOrDown);
         return responseEntity;
     }
 
     @GetMapping("/setBonus/{roomId}/{upOrDown}")
-    public ResponseEntity<?> setPlayerBonus (@PathVariable Long roomId, @PathVariable Long upOrDown, @CurrentUser UserPrincipal currentUser){
-        ResponseEntity responseEntity = playerStatusFacade.setPlayerBonus(roomId, upOrDown, currentUser);
+    public ResponseEntity<?> setPlayerBonus (@PathVariable Long playerStatusId, @PathVariable Long upOrDown){
+        ResponseEntity responseEntity = playerStatusFacade.setPlayerBonus(playerStatusId, upOrDown);
         return responseEntity;
     }
 
-    @GetMapping("/changeGender/{roomId}")
-    public ResponseEntity<?> changeGender (@PathVariable Long roomId, @CurrentUser UserPrincipal currentUser){
-        ResponseEntity responseEntity = playerStatusFacade.changeGender(roomId, currentUser);
+    @GetMapping("/changeGender/{playerStatusId}")
+    public ResponseEntity<?> changeGender (@PathVariable Long playerStatusId){
+        playerStatusFacade.changeGender(playerStatusId);
+        return ResponseEntity.ok("Gender was changed successfully");
+    }
+
+    @GetMapping("/changeRace/{playerStatusId}/{raceId}")
+    public ResponseEntity<?> changeRace (@PathVariable Long playerStatusId, @PathVariable Long raceId){
+        playerStatusFacade.changeRace(playerStatusId, raceId);
+        return ResponseEntity.ok("Race was changed successfully");
+    }
+
+    @GetMapping("/changeClass/{playerStatusId}/{classId}")
+    public ResponseEntity<?> changeClass (@PathVariable Long playerStatusId, @PathVariable Long classId){
+        playerStatusFacade.changeClass(playerStatusId, classId);
+        return ResponseEntity.ok("Class was changed successfully");
+    }
+
+    @DeleteMapping("/delete/oneStatus/byId/{playerStatusId}")
+    public ResponseEntity<?> deletePlayerStatus (@PathVariable Long playerStatusId){
+        playerStatusFacade.deletePlayerStatus(playerStatusId);
+        return ResponseEntity.ok("PlayerStatus was deleted successfully");
+    }
+
+    @DeleteMapping("/delete/allStatuses/byRoomId/{roomId}")
+    public ResponseEntity<?> deleteAllPlayersStatuses (@PathVariable Long roomId){
+        ResponseEntity responseEntity = playerStatusFacade.deletePlayersStatuses(roomId);
         return responseEntity;
     }
+
+    @DeleteMapping("/delete/room/byRoomId/{roomId}")
+    public ResponseEntity<?> deleteRoom (@PathVariable Long roomId){
+        playerStatusFacade.deleteRoom(roomId);
+        return ResponseEntity.ok("Room and all player statuses in it were deleted");
+    }
+
 }

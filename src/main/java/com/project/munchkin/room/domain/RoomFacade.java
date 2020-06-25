@@ -57,7 +57,9 @@ public class RoomFacade {
                 .orElseThrow(() -> new ResourceNotFoundException("Room", "roomId", roomUpdateRequest.getId())).dto();
 
         roomDto.setRoomName(roomUpdateRequest.getRoomName());
-        roomDto.setSlots(roomUpdateRequest.getSlots());
+        if(roomDto.usersInRoom <= roomUpdateRequest.getSlots()){
+            roomDto.setSlots(roomUpdateRequest.getSlots());
+        }
         roomDto.setRoomPassword(roomUpdateRequest.getRoomPassword());
 
         roomRepository.save(Room.fromDto(roomDto));
@@ -79,6 +81,16 @@ public class RoomFacade {
         roomRepository.save(room);
     }
 
+    public boolean roomFull(Long roomId) {
+        return roomRepository.isRoomFull(roomId);
+    }
+
+    public void roomIsCompleted(Long roomId) {
+        RoomDto roomDto = getRoomDto(roomId);
+        roomDto.setComplete(true);
+        roomRepository.save(Room.fromDto(roomDto));
+    }
+
     private RoomResponse mapRoomDtoToRoomResponse(RoomDto roomDto) {
         return RoomResponse.builder()
                 .id(roomDto.getId())
@@ -89,9 +101,5 @@ public class RoomFacade {
                 .creatorId(roomDto.getUser().getId())
                 .roomPassword(roomDto.getRoomPassword())
                 .build();
-    }
-
-    public boolean roomFull(Long roomId) {
-        return roomRepository.isRoomFull(roomId);
     }
 }

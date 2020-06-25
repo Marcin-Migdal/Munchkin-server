@@ -45,12 +45,6 @@ public class RoomController {
         return roomFacade.getAllRooms(page, pageSize);
     }
 
-    @DeleteMapping("/deleteById/{roomId}")
-    public ResponseEntity<?> deleteById(@PathVariable Long roomId) {
-        roomFacade.deleteById(roomId);
-        return ResponseEntity.ok("Room deleted");
-    }
-
     @PutMapping
     public RoomResponse editRoom(@Valid @RequestBody RoomUpdateRequest roomUpdateRequest) {
         return roomFacade.editRoom(roomUpdateRequest);
