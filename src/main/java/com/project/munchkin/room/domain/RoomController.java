@@ -36,23 +36,19 @@ public class RoomController {
     }
 
     @GetMapping("/byId/{roomId}")
-    public RoomResponse getRoom(@PathVariable Long roomId){
+    public RoomResponse getRoom(@PathVariable Long roomId) {
         return roomFacade.getRoomByRoomId(roomId);
     }
 
-    @GetMapping("/getAllPageable/{page}/{pageSize}")
-    public Page<RoomResponse> getRoomFacade(@PathVariable int page, @PathVariable int pageSize){
+    @GetMapping("/getAll/{page}/{pageSize}")
+    public Page<RoomResponse> getPageableRooms(@PathVariable int page, @PathVariable int pageSize) {
         return roomFacade.getAllRooms(page, pageSize);
     }
 
-    @DeleteMapping("/byId/{roomId}")
-    public ResponseEntity<?> deleteById(@PathVariable Long roomId){
-        roomFacade.deleteById(roomId);
-        return ResponseEntity.ok("Room deleted");
-    }
-
     @PutMapping
-    public RoomResponse editRoom(@Valid @RequestBody RoomUpdateRequest roomUpdateRequest){
+    public RoomResponse editRoom(@Valid @RequestBody RoomUpdateRequest roomUpdateRequest) {
         return roomFacade.editRoom(roomUpdateRequest);
     }
+
+
 }

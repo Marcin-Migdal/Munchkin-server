@@ -16,8 +16,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import javax.validation.Valid;
-
 @Service
 @Builder
 public class RoomFacade {
@@ -32,6 +30,7 @@ public class RoomFacade {
         Room room = Room.builder()
                 .roomName(roomRequest.getRoomName())
                 .slots(roomRequest.getSlots())
+                .usersInRoom(1L)
                 .isComplete(false)
                 .user(userFacade.getUser(currentUser.getId()))
                 .roomPassword(roomRequest.getRoomPassword())
@@ -44,7 +43,7 @@ public class RoomFacade {
     public RoomResponse getRoomByRoomId(Long roomId) {
         RoomDto roomDto = roomRepository.findById(roomId)
                 .orElseThrow(() -> new ResourceNotFoundException("Room", "roomId", roomId)).dto();
-        return mapToRoomResponse(roomDto);
+        return mapRoomDtoToRoomResponse(roomDto);
     }
 
     public Page<RoomResponse> getAllRooms(int page, int pageSize) {
@@ -53,12 +52,14 @@ public class RoomFacade {
         return rooms.map(Room::response);
     }
 
-    public RoomResponse editRoom(@Valid RoomUpdateRequest roomUpdateRequest) {
+    public RoomResponse editRoom(RoomUpdateRequest roomUpdateRequest) {
         RoomDto roomDto = roomRepository.findById(roomUpdateRequest.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Room", "roomId", roomUpdateRequest.getId())).dto();
 
         roomDto.setRoomName(roomUpdateRequest.getRoomName());
-        roomDto.setSlots(roomUpdateRequest.getSlots());
+        if(roomDto.usersInRoom <= roomUpdateRequest.getSlots()){
+            roomDto.setSlots(roomUpdateRequest.getSlots());
+        }
         roomDto.setRoomPassword(roomUpdateRequest.getRoomPassword());
 
         roomRepository.save(Room.fromDto(roomDto));
@@ -70,18 +71,35 @@ public class RoomFacade {
         roomRepository.deleteById(roomId);
     }
 
+    public RoomDto getRoomDto(Long roomId) {
+        return roomRepository.findById(roomId)
+                .orElseThrow(() -> new ResourceNotFoundException("Room", "roomId", roomId)).dto();
+    }
+
+    public void usersInRoomUpdate(RoomDto roomDto) {
+        Room room = Room.fromDto(roomDto);
+        roomRepository.save(room);
+    }
+
+    public boolean roomFull(Long roomId) {
+        return roomRepository.isRoomFull(roomId);
+    }
+
+    public void roomIsCompleted(Long roomId) {
+        RoomDto roomDto = getRoomDto(roomId);
+        roomDto.setComplete(true);
+        roomRepository.save(Room.fromDto(roomDto));
+    }
+
     private RoomResponse mapRoomDtoToRoomResponse(RoomDto roomDto) {
         return RoomResponse.builder()
                 .id(roomDto.getId())
                 .roomName(roomDto.getRoomName())
                 .slots(roomDto.getSlots())
+                .usersInRoom(roomDto.getUsersInRoom())
                 .isComplete(roomDto.isComplete())
-                .creatorName(roomDto.getUser().getUsername())
+                .creatorId(roomDto.getUser().getId())
                 .roomPassword(roomDto.getRoomPassword())
                 .build();
-    }
-
-    private RoomResponse mapToRoomResponse(RoomDto roomDto) {
-        return mapRoomDtoToRoomResponse(roomDto);
     }
 }

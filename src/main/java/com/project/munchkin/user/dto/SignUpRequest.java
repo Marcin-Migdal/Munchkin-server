@@ -35,4 +35,8 @@ public class SignUpRequest {
     @NotBlank
     @Getter
     private String iconUrl;
+
+    @NotBlank
+    @Getter
+    private String gender;
 }
