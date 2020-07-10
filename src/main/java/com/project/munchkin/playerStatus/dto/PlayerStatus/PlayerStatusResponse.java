@@ -17,7 +17,11 @@ public class PlayerStatusResponse {
     Long userId;
     String userName;
     PlayerClassDto playerClassDto;
+    boolean twoClasses;
+    PlayerClassDto secondPlayerClassDto;
     PlayerRaceDto playerRaceDto;
+    boolean twoRaces;
+    PlayerRaceDto secondPlayerRaceDto;
     Long playerLevel;
     Long playerBonus;
     String gender;

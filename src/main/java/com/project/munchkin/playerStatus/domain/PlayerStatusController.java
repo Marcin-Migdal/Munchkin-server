@@ -65,13 +65,13 @@ public class PlayerStatusController {
         return ResponseEntity.ok("Player leaved room");
     }
 
-    @GetMapping("/setLevel/{roomId}/{upOrDown}")
+    @GetMapping("/setLevel/{playerStatusId}/{upOrDown}")
     public ResponseEntity<?> setPlayerLevel (@PathVariable Long playerStatusId, @PathVariable Long upOrDown){
         ResponseEntity responseEntity = playerStatusFacade.setPlayerLevel(playerStatusId, upOrDown);
         return responseEntity;
     }
 
-    @GetMapping("/setBonus/{roomId}/{upOrDown}")
+    @GetMapping("/setBonus/{playerStatusId}/{upOrDown}")
     public ResponseEntity<?> setPlayerBonus (@PathVariable Long playerStatusId, @PathVariable Long upOrDown){
         ResponseEntity responseEntity = playerStatusFacade.setPlayerBonus(playerStatusId, upOrDown);
         return responseEntity;
@@ -89,10 +89,32 @@ public class PlayerStatusController {
         return ResponseEntity.ok("Race was changed successfully");
     }
 
+    @GetMapping("/toggleTwoRaces/{playerStatusId}")
+    public void toggleTwoRaces(@PathVariable Long playerStatusId){
+        playerStatusFacade.toggleTwoRaces(playerStatusId);
+    }
+
+    @GetMapping("/changeSecondRace/{playerStatusId}/{raceId}")
+    public ResponseEntity<?> changeSecondRace (@PathVariable Long playerStatusId, @PathVariable Long raceId){
+        ResponseEntity<?> responseEntity = playerStatusFacade.changeSecondRace(playerStatusId, raceId);
+        return responseEntity;
+    }
+
     @GetMapping("/changeClass/{playerStatusId}/{classId}")
     public ResponseEntity<?> changeClass (@PathVariable Long playerStatusId, @PathVariable Long classId){
         playerStatusFacade.changeClass(playerStatusId, classId);
         return ResponseEntity.ok("Class was changed successfully");
+    }
+
+    @GetMapping("/toggleTwoClasses/{playerStatusId}")
+    public void toggleTwoClasses(@PathVariable Long playerStatusId){
+        playerStatusFacade.toggleTwoClasses(playerStatusId);
+    }
+
+    @GetMapping("/changeSecondClass/{playerStatusId}/{classId}")
+    public ResponseEntity<?> changeSecondClass (@PathVariable Long playerStatusId, @PathVariable Long classId){
+        ResponseEntity<?> responseEntity = playerStatusFacade.changeSecondClass(playerStatusId, classId);
+        return responseEntity;
     }
 
     @DeleteMapping("/delete/oneStatus/byId/{playerStatusId}")
@@ -106,11 +128,4 @@ public class PlayerStatusController {
         ResponseEntity responseEntity = playerStatusFacade.deletePlayersStatuses(roomId);
         return responseEntity;
     }
-
-    @DeleteMapping("/delete/room/byRoomId/{roomId}")
-    public ResponseEntity<?> deleteRoom (@PathVariable Long roomId){
-        playerStatusFacade.deleteRoom(roomId);
-        return ResponseEntity.ok("Room and all player statuses in it were deleted");
-    }
-
 }

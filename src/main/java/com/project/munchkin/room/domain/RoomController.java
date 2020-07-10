@@ -3,6 +3,7 @@ package com.project.munchkin.room.domain;
 import com.project.munchkin.base.dto.ApiResponse;
 import com.project.munchkin.base.security.CurrentUser;
 import com.project.munchkin.base.security.UserPrincipal;
+import com.project.munchkin.playerStatus.dto.PlayerStatus.PlayerStatusResponse;
 import com.project.munchkin.room.dto.RoomDto;
 import com.project.munchkin.room.dto.RoomRequest;
 import com.project.munchkin.room.dto.RoomResponse;
@@ -15,6 +16,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.validation.Valid;
 import java.net.URI;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/rooms")
@@ -50,5 +52,15 @@ public class RoomController {
         return roomFacade.editRoom(roomUpdateRequest);
     }
 
+    @DeleteMapping("/deleteById/{roomId}")
+    public ResponseEntity<?> deleteRoom (@PathVariable Long roomId){
+        ResponseEntity responseEntity = roomFacade.deleteRoomById(roomId);
+        return responseEntity;
+    }
 
+    @GetMapping("/getGameSummary/{roomId}")
+    public List<PlayerStatusResponse> getGameSummary (@PathVariable Long roomId){
+        List<PlayerStatusResponse> gameSummaryResponse = roomFacade.getGameSummary(roomId);
+        return gameSummaryResponse;
+    }
 }

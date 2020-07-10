@@ -2,7 +2,7 @@ package com.project.munchkin.room.domain;
 
 import com.project.munchkin.playerStatus.domain.PlayerStatusFacade;
 import com.project.munchkin.room.repository.RoomRepository;
-import com.project.munchkin.user.domain.UserFacade;
+import com.project.munchkin.user.repository.UserRepository;
 
 public class RoomFacadeCreator {
 
@@ -10,13 +10,13 @@ public class RoomFacadeCreator {
 
     private RoomRepository roomRepository;
 
-    private UserFacade userFacade;
+    private UserRepository userRepository;
 
     private PlayerStatusFacade playerStatusFacade;
 
-    public static RoomFacade createRoomFacade(UserFacade userFacade, RoomRepository roomRepository, PlayerStatusFacade playerStatusFacade) {
+    public static RoomFacade createRoomFacade(UserRepository userRepository, RoomRepository roomRepository, PlayerStatusFacade playerStatusFacade) {
         return RoomFacade.builder()
-                .userFacade(userFacade)
+                .userRepository(userRepository)
                 .roomRepository(roomRepository)
                 .build();
     }

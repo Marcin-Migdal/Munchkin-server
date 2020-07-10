@@ -11,10 +11,12 @@ import com.project.munchkin.playerStatus.model.PlayerStatus;
 import com.project.munchkin.playerStatus.repository.PlayerClassRepository;
 import com.project.munchkin.playerStatus.repository.PlayerRaceRepository;
 import com.project.munchkin.playerStatus.repository.PlayerStatusRepository;
-import com.project.munchkin.room.domain.RoomFacade;
 import com.project.munchkin.room.dto.RoomDto;
 import com.project.munchkin.room.exception.ResourceNotFoundException;
-import com.project.munchkin.user.domain.UserFacade;
+import com.project.munchkin.room.model.Room;
+import com.project.munchkin.room.repository.RoomRepository;
+import com.project.munchkin.user.dto.UserDto;
+import com.project.munchkin.user.repository.UserRepository;
 import lombok.Builder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -28,10 +30,10 @@ import java.util.stream.Collectors;
 public class PlayerStatusFacade {
 
     @Autowired
-    UserFacade userFacade;
+    UserRepository userRepository;
 
     @Autowired
-    RoomFacade roomFacade;
+    RoomRepository roomRepository;
 
     @Autowired
     PlayerStatusRepository playerStatusRepository;
@@ -80,16 +82,16 @@ public class PlayerStatusFacade {
     }
 
     public List<PlayerStatusResponse> getAllPlayersStatusesInRoom(Long roomId) {
-        List<PlayerStatusResponse> allPlayersStatuses = playerStatusRepository.findAllPlayerStatusByRoomId(roomId)
+        List<PlayerStatusResponse> allPlayersStatusesInRoom = playerStatusRepository.findAllPlayerStatusByRoomId(roomId)
                 .stream()
                 .map(item -> toPlayerStatusResponse(item))
                 .collect(Collectors.toList());
 
-        if(allPlayersStatuses.isEmpty()){
+        if(allPlayersStatusesInRoom.isEmpty()){
             throw new ResourceNotFoundException("Players Statuses","roomId", roomId);
         }
 
-        return allPlayersStatuses;
+        return allPlayersStatusesInRoom;
     }
 
     public ResponseEntity joinRoom(Long roomId, String roomPassword, UserPrincipal currentUser) {
@@ -99,11 +101,11 @@ public class PlayerStatusFacade {
             return ResponseEntity.ok("You already in another room, to join this room please leave room you are already in");
         }
 
-        if(roomFacade.roomFull(roomId)){
+        if(roomRepository.isRoomFull(roomId)){
             return ResponseEntity.ok("Room is full");
         }
 
-        RoomDto roomDto = roomFacade.getRoomDto(roomId);
+        RoomDto roomDto = getRoomDto(roomId);
         if (roomDto.getRoomPassword().equals(roomPassword)) {
             try {
                 PlayerStatusDto playerStatusDto = getPlayerStatusEntityByRoomId(roomId, currentUser.getId()).dto();
@@ -124,7 +126,7 @@ public class PlayerStatusFacade {
     }
 
     public void exitRoom(Long roomId, Long playerStatusId) {
-        RoomDto roomDto = roomFacade.getRoomDto(roomId);
+        RoomDto roomDto = getRoomDto(roomId);
         PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(playerStatusId).dto();
         playerStatusDto.setPlayerInRoom(false);
 
@@ -138,13 +140,18 @@ public class PlayerStatusFacade {
             return ResponseEntity.ok("Player level can't be lower then 0");
         }
 
-        playerStatusDto.setPlayerLevel(playerStatusDto.getPlayerLevel() + upOrDown);
-        playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
-
         if (playerStatusDto.getPlayerLevel() + upOrDown > 9){
-            roomFacade.roomIsCompleted(playerStatusDto.getRoomId());
+            playerStatusDto.setPlayerLevel(playerStatusDto.getPlayerLevel() + upOrDown);
+            playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
+
+            RoomDto roomDto = getRoomDto(playerStatusDto.getRoomId());
+            roomDto.setComplete(true);
+            roomRepository.save(Room.fromDto(roomDto));
             return ResponseEntity.ok("Player achieved level 10, game is over");
         }
+
+        playerStatusDto.setPlayerLevel(playerStatusDto.getPlayerLevel() + upOrDown);
+        playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
 
         return  ResponseEntity.ok("player level set successfully");
     }
@@ -175,6 +182,25 @@ public class PlayerStatusFacade {
         playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
     }
 
+    public void toggleTwoRaces(Long playerStatusId) {
+        PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(playerStatusId).dto();
+
+        playerStatusDto.setTwoRaces(!playerStatusDto.isTwoRaces());
+        playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
+    }
+
+    public ResponseEntity<?> changeSecondRace(Long playerStatusId, Long raceId) {
+        PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(playerStatusId).dto();
+
+        if(playerStatusDto.isTwoRaces()){
+            playerStatusDto.setSecondRaceId(raceId);
+            playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
+
+            return ResponseEntity.ok("Second race was changed successfully");
+        }
+        return ResponseEntity.ok("You can't have second race");
+    }
+
     public void changeClass(Long playerStatusId, Long classId) {
         PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(playerStatusId).dto();
 
@@ -182,11 +208,30 @@ public class PlayerStatusFacade {
         playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
     }
 
+    public void toggleTwoClasses(Long playerStatusId) {
+        PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(playerStatusId).dto();
+
+        playerStatusDto.setTwoClasses(!playerStatusDto.isTwoClasses());
+        playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
+    }
+
+    public ResponseEntity<?> changeSecondClass(Long playerStatusId, Long classId) {
+        PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(playerStatusId).dto();
+
+        if(playerStatusDto.isTwoClasses()){
+            playerStatusDto.setSecondClassId(classId);
+            playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
+
+            return ResponseEntity.ok("Second class was changed successfully");
+        }
+        return ResponseEntity.ok("You can't have second class");
+    }
+
     public void deletePlayerStatus(Long playerStatusId) {
         PlayerStatus playerStatus = getPlayerStatusEntityById(playerStatusId);
-        RoomDto roomDto = roomFacade.getRoomDto(playerStatus.getRoomId());
+        RoomDto roomDto = getRoomDto(playerStatus.getRoomId());
         roomDto.setUsersInRoom(roomDto.getUsersInRoom() - 1L);
-        roomFacade.usersInRoomUpdate(roomDto);
+        usersInRoomUpdate(roomDto);
         playerStatusRepository.delete(playerStatus);
     }
 
@@ -197,18 +242,12 @@ public class PlayerStatusFacade {
             return ResponseEntity.ok("No player statuses was found");
         }
 
-        RoomDto roomDto = roomFacade.getRoomDto(roomId);
+        RoomDto roomDto = getRoomDto(roomId);
         roomDto.setUsersInRoom(0L);
-        roomFacade.usersInRoomUpdate(roomDto);
+        usersInRoomUpdate(roomDto);
         playerStatusRepository.deleteAll(allPlayersStatuses);
 
         return ResponseEntity.ok("All statuses in the room were deleted");
-    }
-
-
-    public void deleteRoom(Long roomId) {
-        roomFacade.deleteById(roomId);
-        deletePlayersStatuses(roomId);
     }
 
     private PlayerStatus getPlayerStatusEntityByRoomId(Long roomId, Long userId) {
@@ -225,11 +264,11 @@ public class PlayerStatusFacade {
         if(joiningOrLeaving){
             playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
             roomDto.setUsersInRoom(roomDto.getUsersInRoom() + 1L);
-            roomFacade.usersInRoomUpdate(roomDto);
+            usersInRoomUpdate(roomDto);
         }else{
             playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
             roomDto.setUsersInRoom(roomDto.getUsersInRoom() - 1L);
-            roomFacade.usersInRoomUpdate(roomDto);
+            usersInRoomUpdate(roomDto);
         }
     }
 
@@ -237,9 +276,13 @@ public class PlayerStatusFacade {
         return PlayerStatusResponse.builder()
                 .playerStatusId(playerStatus.getId())
                 .userId(playerStatus.getUserId())
-                .userName(userFacade.getUser(playerStatus.getUserId()).getUsername())
+                .userName(getUserDto(playerStatus.getUserId()).getUsername())
                 .playerClassDto(getPlayerClass(playerStatus.getClassId()))
+                .twoClasses(playerStatus.isTwoClasses())
+                .secondPlayerClassDto(getPlayerClass(playerStatus.getSecondClassId()))
                 .playerRaceDto(getPlayerRace(playerStatus.getRaceId()))
+                .twoClasses(playerStatus.isTwoClasses())
+                .secondPlayerRaceDto(getPlayerRace(playerStatus.getSecondRaceId()))
                 .playerLevel(playerStatus.getPlayerLevel())
                 .playerBonus(playerStatus.getPlayerBonus())
                 .gender(playerStatus.getGender())
@@ -252,12 +295,31 @@ public class PlayerStatusFacade {
                 .roomId(roomId)
                 .userId(currentUser.getId())
                 .classId(0L)
+                .twoClasses(false)
+                .secondClassId(0L)
                 .raceId(0L)
-                .playerLevel(0L)
+                .twoRaces(false)
+                .secondRaceId(0L)
+                .playerLevel(1L)
                 .playerBonus(0L)
                 .playerInRoom(true)
-                .gender(userFacade.getUser(currentUser.getId()).getGender())
+                .gender(getUserDto(currentUser.getId()).getGender())
                 .build();
         return playerStatus;
+    }
+
+    private UserDto getUserDto(Long userId){
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "UserId", userId)).dto();
+    }
+
+    private RoomDto getRoomDto(Long roomId) {
+        return roomRepository.findById(roomId)
+                .orElseThrow(() -> new ResourceNotFoundException("Room", "roomId", roomId)).dto();
+    }
+
+    private void usersInRoomUpdate(RoomDto roomDto) {
+        Room room = Room.fromDto(roomDto);
+        roomRepository.save(room);
     }
 }

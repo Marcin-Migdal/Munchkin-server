@@ -15,7 +15,11 @@ public class PlayerStatusDto {
     Long roomId;
     Long userId;
     Long classId;
+    boolean twoClasses;
+    Long secondClassId;
     Long raceId;
+    boolean twoRaces;
+    Long secondRaceId;
     Long playerLevel;
     Long playerBonus;
     Boolean playerInRoom;
