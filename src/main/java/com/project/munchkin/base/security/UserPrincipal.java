@@ -1,6 +1,6 @@
 package com.project.munchkin.base.security;
 
-import com.project.munchkin.users.model.User;
+import com.project.munchkin.user.model.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

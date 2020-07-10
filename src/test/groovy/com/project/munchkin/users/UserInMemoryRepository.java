@@ -1,7 +1,7 @@
 package groovy.com.project.munchkin.users;
 
-import com.project.munchkin.users.model.User;
-import com.project.munchkin.users.repository.UserRepository;
+import com.project.munchkin.user.model.User;
+import com.project.munchkin.user.repository.UserRepository;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

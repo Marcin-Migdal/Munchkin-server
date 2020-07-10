@@ -1,7 +1,7 @@
 package groovy.com.project.munchkin.rooms;
 
-import com.project.munchkin.rooms.model.Room;
-import com.project.munchkin.rooms.repository.RoomRepository;
+import com.project.munchkin.room.model.Room;
+import com.project.munchkin.room.repository.RoomRepository;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
