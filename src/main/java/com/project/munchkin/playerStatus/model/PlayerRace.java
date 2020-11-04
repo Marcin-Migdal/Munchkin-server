@@ -1,6 +1,6 @@
 package com.project.munchkin.playerStatus.model;
 
-import com.project.munchkin.playerStatus.dto.PlayerRace.PlayerRaceDto;
+import com.project.munchkin.playerStatus.dto.PlayerRaceDto;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 

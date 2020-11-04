@@ -1,14 +1,20 @@
 package com.project.munchkin.user.domain;
 
+import com.project.munchkin.base.security.JwtTokenProvider;
+import com.project.munchkin.room.exception.ResourceNotFoundException;
+import com.project.munchkin.user.dto.UserDto;
+import com.project.munchkin.user.dto.UserEditRequest;
+import com.project.munchkin.user.dto.UserPasswordRecoveryRequest;
+import com.project.munchkin.user.dto.UserResponse;
+import com.project.munchkin.user.dto.authRequests.LoginRequest;
+import com.project.munchkin.user.dto.authRequests.SignUpRequest;
 import com.project.munchkin.user.exception.EmailAlreadyExistsException;
 import com.project.munchkin.user.exception.UsernameAlreadyExistsException;
 import com.project.munchkin.user.model.User;
-import com.project.munchkin.user.dto.LoginRequest;
-import com.project.munchkin.user.dto.SignUpRequest;
 import com.project.munchkin.user.repository.UserRepository;
-import com.project.munchkin.base.security.JwtTokenProvider;
 import lombok.Builder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -62,7 +68,51 @@ public class UserFacade {
         return result;
     }
 
-    public User getUser(Long userId) {
-        return userRepository.getOne(userId);
+    public UserResponse getUserResponse(Long userId) {
+        UserDto userDto = getUser(userId).dto();
+        return UserResponse.builder()
+                .inGameName(userDto.getInGameName())
+                .username(userDto.getUsername())
+                .iconUrl(userDto.getIconUrl())
+                .gender(userDto.getGender())
+                .build();
+    }
+
+    public ResponseEntity editUser(UserEditRequest userEditRequest, Long userId) {
+        UserDto userDto = getUser(userId).dto();
+
+        userDto.setUsername(userEditRequest.getUsername());
+        userDto.setInGameName(userEditRequest.getInGameName());
+        userDto.setIconUrl(userEditRequest.getIconUrl());
+        userDto.setGender(userEditRequest.getGender());
+
+        userRepository.save(User.fromDto(userDto));
+
+        return ResponseEntity.ok("User was edited successfully");
+    }
+
+    public ResponseEntity changeUserPassword(String newPassword, Long userId) {
+        UserDto userDto = getUser(userId).dto();
+        userDto.setUserPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(User.fromDto(userDto));
+
+        return ResponseEntity.ok("Password was changed successfully");
+    }
+
+    public ResponseEntity passwordRecovery(UserPasswordRecoveryRequest userPasswordRecoveryRequest) {
+        if(userRepository.existsByUsername(userPasswordRecoveryRequest.getUsername()) && userRepository.existsByEmail(userPasswordRecoveryRequest.getEmail())){
+            User user = userRepository.findByUsernameOrEmail(userPasswordRecoveryRequest.getUsername(), userPasswordRecoveryRequest.getEmail())
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "username: "+ userPasswordRecoveryRequest.getUsername() + "or email", userPasswordRecoveryRequest.getEmail()));
+
+            changeUserPassword(userPasswordRecoveryRequest.getUserPassword(), user.getId());
+
+            return ResponseEntity.ok("Password was changed successfully");
+        }
+        return ResponseEntity.ok("There is no account with email or username like that");
+    }
+
+    private User getUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "UserId", userId));
     }
 }

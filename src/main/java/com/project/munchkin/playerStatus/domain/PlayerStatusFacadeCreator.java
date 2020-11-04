@@ -3,13 +3,13 @@ package com.project.munchkin.playerStatus.domain;
 import com.project.munchkin.playerStatus.repository.PlayerClassRepository;
 import com.project.munchkin.playerStatus.repository.PlayerRaceRepository;
 import com.project.munchkin.playerStatus.repository.PlayerStatusRepository;
-import com.project.munchkin.user.domain.UserFacade;
+import com.project.munchkin.user.repository.UserRepository;
 
 public class PlayerStatusFacadeCreator {
 
     private PlayerStatusFacade playerStatusFacade;
 
-    private UserFacade userFacade;
+    private UserRepository userRepository;
 
     private PlayerStatusRepository playerStatusRepository;
 
@@ -17,10 +17,10 @@ public class PlayerStatusFacadeCreator {
 
     private PlayerClassRepository playerClassRepository;
 
-    public static PlayerStatusFacade gameFacadeCreator (UserFacade userFacade, PlayerStatusRepository playerStatusRepository,
+    public static PlayerStatusFacade gameFacadeCreator (UserRepository userRepository, PlayerStatusRepository playerStatusRepository,
                                                         PlayerRaceRepository playerRaceRepository, PlayerClassRepository playerClassRepository) {
         return PlayerStatusFacade.builder()
-                .userFacade(userFacade)
+                .userRepository(userRepository)
                 .playerStatusRepository(playerStatusRepository)
                 .playerRaceRepository(playerRaceRepository)
                 .playerClassRepository(playerClassRepository)

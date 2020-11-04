@@ -1,4 +1,4 @@
-package com.project.munchkin.playerStatus.dto.PlayerRace;
+package com.project.munchkin.playerStatus.dto;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

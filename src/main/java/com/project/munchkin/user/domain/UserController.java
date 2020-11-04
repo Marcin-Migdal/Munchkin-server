@@ -1,19 +1,18 @@
 package com.project.munchkin.user.domain;
 
+import com.project.munchkin.base.dto.ApiResponse;
+import com.project.munchkin.base.security.CurrentUser;
+import com.project.munchkin.base.security.UserPrincipal;
+import com.project.munchkin.user.dto.*;
+import com.project.munchkin.user.dto.authRequests.LoginRequest;
+import com.project.munchkin.user.dto.authRequests.SignUpRequest;
 import com.project.munchkin.user.exception.EmailAlreadyExistsException;
 import com.project.munchkin.user.exception.UsernameAlreadyExistsException;
 import com.project.munchkin.user.model.User;
-import com.project.munchkin.base.dto.ApiResponse;
-import com.project.munchkin.user.dto.JwtAuthenticationResponse;
-import com.project.munchkin.user.dto.LoginRequest;
-import com.project.munchkin.user.dto.SignUpRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.validation.Valid;
@@ -47,5 +46,25 @@ public class UserController {
             return new ResponseEntity(new ApiResponse(false, "Email Address already in use!"),
                     HttpStatus.BAD_REQUEST);
         }
+    }
+
+    @GetMapping("/user")
+    public UserResponse getCurrentUser(@CurrentUser UserPrincipal currentUser){
+        return userFacade.getUserResponse(currentUser.getId());
+    }
+
+    @PutMapping("/editUser")
+    public ResponseEntity<?> editUser(@Valid @RequestBody UserEditRequest userEditRequest, @CurrentUser UserPrincipal currentUser) {
+        return userFacade.editUser(userEditRequest, currentUser.getId());
+    }
+
+    @PatchMapping("/edit/changePassword")
+    public ResponseEntity<?> changeUserPassword(@Valid @RequestBody UserEditRequest userEditRequest, @CurrentUser UserPrincipal currentUser) {
+        return userFacade.changeUserPassword(userEditRequest.getUserPassword(), currentUser.getId());
+    }
+
+    @PatchMapping("/forgottenPassword")
+    public ResponseEntity<?> forgottenPassword(@Valid @RequestBody UserPasswordRecoveryRequest userPasswordRecoveryRequest) {
+        return userFacade.passwordRecovery(userPasswordRecoveryRequest);
     }
 }

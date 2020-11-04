@@ -32,7 +32,19 @@ public class PlayerStatus {
     Long classId;
 
     @NotNull
+    boolean twoClasses;
+
+    @NotNull
+    Long secondClassId;
+
+    @NotNull
     Long raceId;
+
+    @NotNull
+    boolean twoRaces;
+
+    @NotNull
+    Long secondRaceId;
 
     @NotNull
     Long playerLevel;
@@ -52,11 +64,15 @@ public class PlayerStatus {
                 .roomId(playerStatusDto.getRoomId())
                 .userId(playerStatusDto.getUserId())
                 .classId(playerStatusDto.getClassId())
+                .twoClasses(playerStatusDto.isTwoClasses())
+                .secondClassId(playerStatusDto.getSecondClassId())
                 .raceId(playerStatusDto.getRaceId())
+                .twoRaces(playerStatusDto.isTwoRaces())
+                .secondRaceId(playerStatusDto.getSecondRaceId())
                 .playerLevel(playerStatusDto.getPlayerLevel())
                 .playerBonus(playerStatusDto.getPlayerBonus())
-                .playerInRoom(playerStatusDto.getPlayerInRoom())
-                .gender(playerStatusDto.gender)
+                .playerInRoom(playerStatusDto.playerInRoom)
+                .gender(playerStatusDto.getGender())
                 .build();
     }
 
@@ -66,7 +82,11 @@ public class PlayerStatus {
                 .roomId(roomId)
                 .userId(userId)
                 .classId(classId)
+                .twoClasses(twoClasses)
+                .secondClassId(secondClassId)
                 .raceId(raceId)
+                .twoRaces(twoRaces)
+                .secondRaceId(secondRaceId)
                 .playerLevel(playerLevel)
                 .playerBonus(playerBonus)
                 .playerInRoom(playerInRoom)
