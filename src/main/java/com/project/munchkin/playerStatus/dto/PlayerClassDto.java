@@ -1,4 +1,4 @@
-package com.project.munchkin.playerStatus.dto.PlayerClass;
+package com.project.munchkin.playerStatus.dto;
 
 import lombok.AccessLevel;
 import lombok.Builder;
