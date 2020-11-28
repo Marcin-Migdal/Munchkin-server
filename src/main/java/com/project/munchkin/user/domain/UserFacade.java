@@ -14,7 +14,7 @@ import com.project.munchkin.user.model.User;
 import com.project.munchkin.user.repository.UserRepository;
 import lombok.Builder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -47,38 +47,36 @@ public class UserFacade {
         );
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        String jwt = tokenProvider.generateToken(authentication);
-        return jwt;
+        return tokenProvider.generateToken(authentication);
     }
 
-    public User registerUser(SignUpRequest signUpRequest) throws UsernameAlreadyExistsException, EmailAlreadyExistsException {
+    public UserResponse registerUser(SignUpRequest signUpRequest) throws UsernameAlreadyExistsException, EmailAlreadyExistsException {
         if (userRepository.existsByUsername(signUpRequest.getUsername())) {
-            throw new UsernameAlreadyExistsException("Username " + signUpRequest.getUsername() + " is already taken!");
+            throw new UsernameAlreadyExistsException("Username " + signUpRequest.getUsername() + " is already taken!", HttpStatus.BAD_REQUEST);
         }
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-            throw new EmailAlreadyExistsException("Email " + signUpRequest.getUsername() + " already in use!");
+            throw new EmailAlreadyExistsException("Email " + signUpRequest.getUsername() + " already in use!", HttpStatus.BAD_REQUEST);
         }
 
-        User user = new User(signUpRequest.getInGameName(), signUpRequest.getUsername(),
-                signUpRequest.getEmail(), signUpRequest.getUserPassword(), signUpRequest.getIconUrl(), signUpRequest.getGender());;
+        User user = User.builder()
+                .inGameName(signUpRequest.getInGameName())
+                .username(signUpRequest.getUsername())
+                .email(signUpRequest.getEmail())
+                .iconUrl("none")
+                .gender(signUpRequest.getGender())
+                .build();
 
-        user.setUserPassword(passwordEncoder.encode(user.getUserPassword()));
+        user.setUserPassword(passwordEncoder.encode(signUpRequest.getUserPassword()));
 
         User result = userRepository.save(user);
-        return result;
+        return result.response();
     }
 
     public UserResponse getUserResponse(Long userId) {
-        UserDto userDto = getUser(userId).dto();
-        return UserResponse.builder()
-                .inGameName(userDto.getInGameName())
-                .username(userDto.getUsername())
-                .iconUrl(userDto.getIconUrl())
-                .gender(userDto.getGender())
-                .build();
+        return getUser(userId).response();
     }
 
-    public ResponseEntity editUser(UserEditRequest userEditRequest, Long userId) {
+    public UserResponse editUser(UserEditRequest userEditRequest, Long userId) {
         UserDto userDto = getUser(userId).dto();
 
         userDto.setUsername(userEditRequest.getUsername());
@@ -88,31 +86,28 @@ public class UserFacade {
 
         userRepository.save(User.fromDto(userDto));
 
-        return ResponseEntity.ok("User was edited successfully");
+        return getUser(userId).response();
     }
 
-    public ResponseEntity changeUserPassword(String newPassword, Long userId) {
+    public void changeUserPassword(String newPassword, Long userId) {
         UserDto userDto = getUser(userId).dto();
         userDto.setUserPassword(passwordEncoder.encode(newPassword));
         userRepository.save(User.fromDto(userDto));
-
-        return ResponseEntity.ok("Password was changed successfully");
     }
 
-    public ResponseEntity passwordRecovery(UserPasswordRecoveryRequest userPasswordRecoveryRequest) {
+    public void passwordRecovery(UserPasswordRecoveryRequest userPasswordRecoveryRequest) {
         if(userRepository.existsByUsername(userPasswordRecoveryRequest.getUsername()) && userRepository.existsByEmail(userPasswordRecoveryRequest.getEmail())){
             User user = userRepository.findByUsernameOrEmail(userPasswordRecoveryRequest.getUsername(), userPasswordRecoveryRequest.getEmail())
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "username: "+ userPasswordRecoveryRequest.getUsername() + "or email", userPasswordRecoveryRequest.getEmail()));
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "username: "+ userPasswordRecoveryRequest.getUsername() + "or email", userPasswordRecoveryRequest.getEmail(), HttpStatus.NOT_FOUND));
 
             changeUserPassword(userPasswordRecoveryRequest.getUserPassword(), user.getId());
-
-            return ResponseEntity.ok("Password was changed successfully");
+        }else{
+            throw new ResourceNotFoundException("User", "username: "+ userPasswordRecoveryRequest.getUsername() + "or email", userPasswordRecoveryRequest.getEmail(), HttpStatus.NOT_FOUND);
         }
-        return ResponseEntity.ok("There is no account with email or username like that");
     }
 
     private User getUser(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "UserId", userId));
+                .orElseThrow(() -> new ResourceNotFoundException("User", "UserId", userId, HttpStatus.NOT_FOUND));
     }
 }

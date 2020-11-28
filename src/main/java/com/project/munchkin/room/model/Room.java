@@ -11,7 +11,11 @@ import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
 @Entity
-@Table(name = "rooms")
+@Table(name = "rooms", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {
+                "roomName"
+        })
+})
 @Builder
 @Getter
 @Setter

@@ -53,7 +53,7 @@ public class PlayerStatus {
     Long playerBonus;
 
     @NotNull
-    Boolean playerInRoom;
+    boolean playerInRoom;
 
     @NotBlank
     String gender;
@@ -71,7 +71,7 @@ public class PlayerStatus {
                 .secondRaceId(playerStatusDto.getSecondRaceId())
                 .playerLevel(playerStatusDto.getPlayerLevel())
                 .playerBonus(playerStatusDto.getPlayerBonus())
-                .playerInRoom(playerStatusDto.playerInRoom)
+                .playerInRoom(playerStatusDto.isPlayerInRoom())
                 .gender(playerStatusDto.getGender())
                 .build();
     }

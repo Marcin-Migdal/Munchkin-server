@@ -5,13 +5,10 @@ import com.project.munchkin.room.model.Room;
 import com.project.munchkin.room.repository.RoomRepository;
 import org.springframework.data.domain.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
-public class RoomInMemoryRespository implements RoomRepository {
+public class RoomInMemoryRepository implements RoomRepository {
 
     private final Map<Long, Room> rooms = new HashMap<>();
     private Long nextId = 1L;
@@ -38,9 +35,8 @@ public class RoomInMemoryRespository implements RoomRepository {
 
     @Override
     public Page<Room> findAll(Pageable pageable) {
-        List<Room> roomList = rooms.values().stream().collect(Collectors.toList());
-        Page<Room> page = new PageImpl<>(roomList, pageable, roomList.size());
-        return page;
+        List<Room> roomList = new ArrayList<>(rooms.values());
+        return new PageImpl<>(roomList, pageable, roomList.size());
     }
 
     @Override
@@ -148,6 +144,30 @@ public class RoomInMemoryRespository implements RoomRepository {
     public boolean isRoomFull(Long roomId) {
         RoomDto roomDto = rooms.get(roomId).dto();
         return roomDto.getUsersInRoom() >= roomDto.getSlots();
+    }
+
+    @Override
+    public Page<Room> searchPageableRoom(String searchValue, Pageable pageable) {
+        List<Room> roomList = new ArrayList<>(rooms.values());
+        roomList.removeIf(room -> !room.getRoomName().contains(searchValue));
+        return new PageImpl<>(roomList, pageable, roomList.size());
+    }
+
+    @Override
+    public boolean existsByRoomName(String roomName) {
+        List<Room> roomList = rooms.values().stream()
+                .filter(room -> room.getRoomName().equals(roomName))
+                .collect(Collectors.toList());
+
+        return !roomList.isEmpty();
+    }
+
+    @Override
+    public Page<Room> findAllInComplete(Pageable pageable) {
+        List<Room> roomList = rooms.values().stream()
+                .filter(room -> !room.isComplete())
+                .collect(Collectors.toList());
+        return new PageImpl<>(roomList, pageable, roomList.size());
     }
 
     private Long getNextId() {

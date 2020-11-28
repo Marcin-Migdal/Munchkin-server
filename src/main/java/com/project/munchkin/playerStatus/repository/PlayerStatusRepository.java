@@ -19,4 +19,7 @@ public interface PlayerStatusRepository extends JpaRepository<PlayerStatus, Long
 
     @Query("SELECT u FROM PlayerStatus u WHERE u.roomId = ?1" )
     List<PlayerStatus> findAllPlayerStatusByRoomId(Long roomId);
+
+    @Query("SELECT u FROM PlayerStatus u WHERE u.roomId = ?1 ORDER BY u.playerLevel desc" )
+    List<PlayerStatus> findAllSortedPlayerStatusByRoomId(Long roomId);
 }
