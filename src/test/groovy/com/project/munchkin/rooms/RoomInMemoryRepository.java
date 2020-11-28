@@ -1,29 +1,29 @@
 package groovy.com.project.munchkin.rooms;
 
+import com.project.munchkin.room.dto.RoomDto;
 import com.project.munchkin.room.model.Room;
 import com.project.munchkin.room.repository.RoomRepository;
-import org.springframework.data.domain.Example;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class RoomInMemoryRespository implements RoomRepository {
 
-    private final Map<Long, Room> rooms = new ConcurrentHashMap<>();
+    private final Map<Long, Room> rooms = new HashMap<>();
     private Long nextId = 1L;
+
     @Override
-    public Optional<Room> findById(Long id) {
-        return Optional.empty();
+    public Optional<Room> findById(Long roomId) {
+        return Optional.ofNullable(rooms.get(roomId));
     }
 
     @Override
     public boolean existsById(Long aLong) {
-        return false;
+        return rooms.containsKey(aLong);
     }
 
     @Override
@@ -38,7 +38,9 @@ public class RoomInMemoryRespository implements RoomRepository {
 
     @Override
     public Page<Room> findAll(Pageable pageable) {
-        return null;
+        List<Room> roomList = rooms.values().stream().collect(Collectors.toList());
+        Page<Room> page = new PageImpl<>(roomList, pageable, roomList.size());
+        return page;
     }
 
     @Override
@@ -53,7 +55,7 @@ public class RoomInMemoryRespository implements RoomRepository {
 
     @Override
     public void deleteById(Long aLong) {
-
+        rooms.remove(aLong);
     }
 
     @Override
@@ -140,6 +142,12 @@ public class RoomInMemoryRespository implements RoomRepository {
     @Override
     public <S extends Room> boolean exists(Example<S> example) {
         return false;
+    }
+
+    @Override
+    public boolean isRoomFull(Long roomId) {
+        RoomDto roomDto = rooms.get(roomId).dto();
+        return roomDto.getUsersInRoom() >= roomDto.getSlots();
     }
 
     private Long getNextId() {
