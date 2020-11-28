@@ -1,7 +1,7 @@
 package com.project.munchkin.playerStatus.dto.PlayerStatus;
 
-import com.project.munchkin.playerStatus.dto.PlayerClass.PlayerClassDto;
-import com.project.munchkin.playerStatus.dto.PlayerRace.PlayerRaceDto;
+import com.project.munchkin.playerStatus.dto.PlayerClassDto;
+import com.project.munchkin.playerStatus.dto.PlayerRaceDto;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;

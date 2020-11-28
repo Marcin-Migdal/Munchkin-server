@@ -1,4 +1,4 @@
-package com.project.munchkin.user.dto;
+package com.project.munchkin.user.dto.authRequests;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -11,12 +11,12 @@ import javax.validation.constraints.Size;
 @Builder
 public class SignUpRequest {
     @NotBlank
-    @Size(min = 4, max = 40)
+    @Size(min = 3, max = 24)
     @Getter
     private String inGameName;
 
     @NotBlank
-    @Size(min = 3, max = 15)
+    @Size(min = 6, max = 15)
     @Getter
     @Setter
     private String username;
@@ -28,7 +28,7 @@ public class SignUpRequest {
     private String email;
 
     @NotBlank
-    @Size(min = 6, max = 20)
+    @Size(min = 8, max = 20)
     @Getter
     private String userPassword;
 

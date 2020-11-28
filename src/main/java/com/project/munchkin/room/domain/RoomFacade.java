@@ -1,5 +1,6 @@
 package com.project.munchkin.room.domain;
 
+import com.project.munchkin.base.dto.ApiResponse;
 import com.project.munchkin.base.security.UserPrincipal;
 import com.project.munchkin.playerStatus.domain.PlayerStatusFacade;
 import com.project.munchkin.playerStatus.dto.PlayerStatus.PlayerStatusResponse;
@@ -19,9 +20,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
 @Service
@@ -40,20 +44,31 @@ public class RoomFacade {
     @Autowired
     PlayerStatusFacade playerStatusFacade;
 
-    public RoomDto addRoom(RoomRequest roomRequest, UserPrincipal currentUser) {
-        Room room = Room.builder()
-                .roomName(roomRequest.getRoomName())
-                .slots(roomRequest.getSlots())
-                .usersInRoom(0L)
-                .isComplete(false)
-                .user(getUser(currentUser.getId()))
-                .roomPassword(roomRequest.getRoomPassword())
-                .build();
+    public ResponseEntity<?> addRoom(RoomRequest roomRequest, UserPrincipal currentUser) {
+        if (playerStatusFacade.playerIsInAnyRoom(currentUser.getId())) {
+            return new ResponseEntity<>("Can't create new room while being in one", HttpStatus.BAD_REQUEST);
+        }else {
+            Room room = Room.builder()
+                    .roomName(roomRequest.getRoomName())
+                    .slots(roomRequest.getSlots())
+                    .usersInRoom(0L)
+                    .isComplete(false)
+                    .user(getUser(currentUser.getId()))
+                    .roomPassword(roomRequest.getRoomPassword())
+                    .build();
 
-        roomRepository.save(room);
-        playerStatusFacade.joinRoom(room.getId(), room.getRoomPassword(), currentUser);
+            roomRepository.save(room);
+            playerStatusFacade.joinRoom(room.getId(), room.getRoomPassword(), currentUser);
 
-        return room.dto();
+            URI location = ServletUriComponentsBuilder
+                    .fromCurrentRequest().path("/byRoomId/{roomId}")
+                    .buildAndExpand(room.getId()).toUri();
+
+            ResponseEntity<ApiResponse> responseEntity = ResponseEntity.created(location)
+                    .body(new ApiResponse(true, "Room Created Successfully"));
+
+            return responseEntity;
+        }
     }
 
     public RoomResponse getRoomByRoomId(Long roomId) {
@@ -74,9 +89,11 @@ public class RoomFacade {
 
         if(!roomUpdateRequest.getRoomName().isEmpty()){
             roomDto.setRoomName(roomUpdateRequest.getRoomName());
-        }if(roomDto.usersInRoom <= roomUpdateRequest.getSlots()){
+        }
+        if(roomDto.getUsersInRoom() < roomUpdateRequest.getSlots()){
             roomDto.setSlots(roomUpdateRequest.getSlots());
-        }if(!roomUpdateRequest.getRoomPassword().isEmpty()){
+        }
+        if(!roomUpdateRequest.getRoomPassword().isEmpty()){
             roomDto.setRoomPassword(roomUpdateRequest.getRoomPassword());
         }
 

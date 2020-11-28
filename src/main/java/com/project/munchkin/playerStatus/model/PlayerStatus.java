@@ -71,7 +71,7 @@ public class PlayerStatus {
                 .secondRaceId(playerStatusDto.getSecondRaceId())
                 .playerLevel(playerStatusDto.getPlayerLevel())
                 .playerBonus(playerStatusDto.getPlayerBonus())
-                .playerInRoom(playerStatusDto.getPlayerInRoom())
+                .playerInRoom(playerStatusDto.playerInRoom)
                 .gender(playerStatusDto.getGender())
                 .build();
     }

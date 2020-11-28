@@ -1,12 +1,13 @@
 package com.project.munchkin.user.domain;
 
 import com.project.munchkin.base.security.JwtTokenProvider;
-import com.project.munchkin.base.security.UserPrincipal;
 import com.project.munchkin.room.exception.ResourceNotFoundException;
-import com.project.munchkin.user.dto.EditRequest;
-import com.project.munchkin.user.dto.LoginRequest;
-import com.project.munchkin.user.dto.SignUpRequest;
 import com.project.munchkin.user.dto.UserDto;
+import com.project.munchkin.user.dto.UserEditRequest;
+import com.project.munchkin.user.dto.UserPasswordRecoveryRequest;
+import com.project.munchkin.user.dto.UserResponse;
+import com.project.munchkin.user.dto.authRequests.LoginRequest;
+import com.project.munchkin.user.dto.authRequests.SignUpRequest;
 import com.project.munchkin.user.exception.EmailAlreadyExistsException;
 import com.project.munchkin.user.exception.UsernameAlreadyExistsException;
 import com.project.munchkin.user.model.User;
@@ -67,51 +68,51 @@ public class UserFacade {
         return result;
     }
 
-    public void editUsername(String username, UserPrincipal currentUser) {
-        UserDto userDto = getUser(currentUser.getId()).dto();
-        userDto.setUsername(username);
-        userRepository.save(User.fromDto(userDto));
+    public UserResponse getUserResponse(Long userId) {
+        UserDto userDto = getUser(userId).dto();
+        return UserResponse.builder()
+                .inGameName(userDto.getInGameName())
+                .username(userDto.getUsername())
+                .iconUrl(userDto.getIconUrl())
+                .gender(userDto.getGender())
+                .build();
     }
 
-    public void editInGameName(String inGameName, UserPrincipal currentUser) {
-        UserDto userDto = getUser(currentUser.getId()).dto();
-        userDto.setInGameName(inGameName);
+    public ResponseEntity editUser(UserEditRequest userEditRequest, Long userId) {
+        UserDto userDto = getUser(userId).dto();
+
+        userDto.setUsername(userEditRequest.getUsername());
+        userDto.setInGameName(userEditRequest.getInGameName());
+        userDto.setIconUrl(userEditRequest.getIconUrl());
+        userDto.setGender(userEditRequest.getGender());
+
         userRepository.save(User.fromDto(userDto));
+
+        return ResponseEntity.ok("User was edited successfully");
     }
 
-    public void editIcon(String iconUrl, UserPrincipal currentUser) {
-        UserDto userDto = getUser(currentUser.getId()).dto();
-        userDto.setIconUrl(iconUrl);
-        userRepository.save(User.fromDto(userDto));
-    }
-
-    public void changeUserPassword(String newPassword, Long userId) {
+    public ResponseEntity changeUserPassword(String newPassword, Long userId) {
         UserDto userDto = getUser(userId).dto();
         userDto.setUserPassword(passwordEncoder.encode(newPassword));
         userRepository.save(User.fromDto(userDto));
+
+        return ResponseEntity.ok("Password was changed successfully");
     }
 
-    public void changeUserGender(UserPrincipal currentUser) {
-        UserDto userDto = getUser(currentUser.getId()).dto();
-        String newGender = userDto.getGender().equals("men")  ? "women" : "men";
-        userDto.setGender(newGender);
-        userRepository.save(User.fromDto(userDto));
+    public ResponseEntity passwordRecovery(UserPasswordRecoveryRequest userPasswordRecoveryRequest) {
+        if(userRepository.existsByUsername(userPasswordRecoveryRequest.getUsername()) && userRepository.existsByEmail(userPasswordRecoveryRequest.getEmail())){
+            User user = userRepository.findByUsernameOrEmail(userPasswordRecoveryRequest.getUsername(), userPasswordRecoveryRequest.getEmail())
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "username: "+ userPasswordRecoveryRequest.getUsername() + "or email", userPasswordRecoveryRequest.getEmail()));
+
+            changeUserPassword(userPasswordRecoveryRequest.getUserPassword(), user.getId());
+
+            return ResponseEntity.ok("Password was changed successfully");
+        }
+        return ResponseEntity.ok("There is no account with email or username like that");
     }
 
     private User getUser(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "UserId", userId));
-    }
-
-    public ResponseEntity<?> passwordRecovery(EditRequest editRequest) {
-        if(userRepository.existsByUsername(editRequest.getUsername()) || userRepository.existsByEmail(editRequest.getEmail())){
-            User user = userRepository.findByUsernameOrEmail(editRequest.getUsername(), editRequest.getEmail())
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "username or email", editRequest.getUsername()));
-
-            changeUserPassword(editRequest.getUserPassword(), user.getId());
-
-            return ResponseEntity.ok("Password was changed successfully");
-        }
-        return ResponseEntity.ok("There is no account with email or username like that");
     }
 }

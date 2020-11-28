@@ -22,6 +22,6 @@ public class PlayerStatusDto {
     Long secondRaceId;
     Long playerLevel;
     Long playerBonus;
-    Boolean playerInRoom;
+    boolean playerInRoom;
     String gender;
 }

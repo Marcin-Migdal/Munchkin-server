@@ -74,13 +74,13 @@ public class User extends DateAudit {
 
     public static User fromDto(UserDto userDto) {
         return User.builder()
-                .id(userDto.id)
-                .inGameName(userDto.inGameName)
-                .username(userDto.username)
-                .email(userDto.email)
-                .userPassword(userDto.userPassword)
-                .iconUrl(userDto.iconUrl)
-                .gender(userDto.gender)
+                .id(userDto.getId())
+                .inGameName(userDto.getInGameName())
+                .username(userDto.getUsername())
+                .email(userDto.getEmail())
+                .userPassword(userDto.getUserPassword())
+                .iconUrl(userDto.getIconUrl())
+                .gender(userDto.getGender())
                 .build();
     }
 
