@@ -7,36 +7,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
 
 public class UserInMemoryRepository implements UserRepository {
 
-    private final Map<Long, User> users = new ConcurrentHashMap<>();
-
-    @Override
-    public Optional<User> findByEmail(String email) {
-        return Optional.empty();
-    }
+    private final Map<Long, User> users = new HashMap<>();
 
     @Override
     public Optional<User> findByUsernameOrEmail(String username, String email) {
         return (users.values().stream()
                 .filter(user -> user.getUsername().equals(username) && user.getEmail().equals(email)))
                 .findFirst();
-    }
-
-    @Override
-    public List<User> findByIdIn(List<Long> userIds) {
-        return null;
-    }
-
-    @Override
-    public Optional<User> findByUsername(String username) {
-        return Optional.empty();
     }
 
     @Override
@@ -111,8 +92,8 @@ public class UserInMemoryRepository implements UserRepository {
     }
 
     @Override
-    public Optional<User> findById(Long aLong) {
-        return Optional.empty();
+    public Optional<User> findById(Long userId) {
+        return Optional.ofNullable(users.get(userId));
     }
 
     @Override

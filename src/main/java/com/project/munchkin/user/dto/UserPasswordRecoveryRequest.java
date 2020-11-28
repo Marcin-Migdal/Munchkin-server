@@ -2,7 +2,6 @@ package com.project.munchkin.user.dto;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.Size;
@@ -11,7 +10,6 @@ import javax.validation.constraints.Size;
 public class UserPasswordRecoveryRequest {
     @Size(min = 3, max = 15)
     @Getter
-    @Setter
     private String username;
 
     @Size(min = 6, max = 20)

@@ -1,6 +1,7 @@
 package com.project.munchkin.user.model;
 
 import com.project.munchkin.user.dto.UserDto;
+import com.project.munchkin.user.dto.UserResponse;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.NaturalId;
@@ -53,15 +54,6 @@ public class User extends DateAudit {
     @NotBlank
     String gender;
 
-    public User(String inGameName, String username, String email, String userPassword, String iconUrl, String gender) {
-        this.inGameName = inGameName;
-        this.username = username;
-        this.email = email;
-        this.userPassword = userPassword;
-        this.iconUrl = iconUrl;
-        this.gender = gender;
-    }
-
     public User(Long id, String inGameName, String username, String email, String userPassword, String iconUrl, String gender) {
         this.id = id;
         this.inGameName = inGameName;
@@ -91,6 +83,16 @@ public class User extends DateAudit {
                 .username(username)
                 .email(email)
                 .userPassword(userPassword)
+                .iconUrl(iconUrl)
+                .gender(gender)
+                .build();
+    }
+
+    public UserResponse response() {
+        return UserResponse.builder()
+                .id(id)
+                .inGameName(inGameName)
+                .username(username)
                 .iconUrl(iconUrl)
                 .gender(gender)
                 .build();

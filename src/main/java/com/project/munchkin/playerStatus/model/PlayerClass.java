@@ -4,15 +4,12 @@ import com.project.munchkin.playerStatus.dto.PlayerClassDto;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
 @Entity
 @Table(name = "classes")
 @Getter
-@Setter
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @NoArgsConstructor
@@ -20,6 +17,8 @@ import javax.validation.constraints.NotNull;
 public class PlayerClass {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Setter
     Long id;
 
     @NotNull
@@ -30,15 +29,6 @@ public class PlayerClass {
 
     @NotNull
     String classDescription;
-
-    public PlayerClass fromDto (PlayerClassDto playerClassDto){
-        return PlayerClass.builder()
-                .id(playerClassDto.getId())
-                .className(playerClassDto.getClassName())
-                .classIcon(playerClassDto.getClassIcon())
-                .classDescription(playerClassDto.getClassDescription())
-                .build();
-    }
 
     public PlayerClassDto dto (){
         return PlayerClassDto.builder()

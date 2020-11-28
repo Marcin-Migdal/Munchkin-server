@@ -1,7 +1,10 @@
 package com.project.munchkin.user.exception;
 
-public class EmailAlreadyExistsException extends Exception {
-    public EmailAlreadyExistsException(String message) {
-        super(message);
+import com.project.munchkin.base.exception.StatusException;
+import org.springframework.http.HttpStatus;
+
+public class EmailAlreadyExistsException extends StatusException {
+    public EmailAlreadyExistsException(String message, HttpStatus httpStatus) {
+        super(message, httpStatus);
     }
 }
