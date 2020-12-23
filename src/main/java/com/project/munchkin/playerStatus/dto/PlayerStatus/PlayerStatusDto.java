@@ -1,5 +1,6 @@
 package com.project.munchkin.playerStatus.dto.PlayerStatus;
 
+import com.project.munchkin.user.model.User;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,7 +13,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PUBLIC)
 public class PlayerStatusDto {
     Long id;
-    Long userId;
+    User user;
     Long roomId;
     Long classId;
     Long secondClassId;

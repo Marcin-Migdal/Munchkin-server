@@ -19,6 +19,7 @@ import com.project.munchkin.room.exception.ResourceNotFoundException;
 import com.project.munchkin.room.model.Room;
 import com.project.munchkin.room.repository.RoomRepository;
 import com.project.munchkin.user.dto.UserDto;
+import com.project.munchkin.user.model.User;
 import com.project.munchkin.user.repository.UserRepository;
 import lombok.Builder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -331,14 +332,13 @@ public class PlayerStatusFacade {
     private PlayerStatusResponse toPlayerStatusResponse(PlayerStatus playerStatus) {
         return PlayerStatusResponse.builder()
                 .id(playerStatus.getId())
-                .userId(playerStatus.getUserId())
-                .userName(getUserDto(playerStatus.getUserId()).getUsername())
+                .user(playerStatus.getUser().response())
                 .playerClassDto(getClass(playerStatus.getClassId()))
-                .twoClasses(playerStatus.isTwoClasses())
                 .secondPlayerClassDto(getClass(playerStatus.getSecondClassId()))
-                .playerRaceDto(getRace(playerStatus.getRaceId()))
                 .twoClasses(playerStatus.isTwoClasses())
+                .playerRaceDto(getRace(playerStatus.getRaceId()))
                 .secondPlayerRaceDto(getRace(playerStatus.getSecondRaceId()))
+                .twoClasses(playerStatus.isTwoClasses())
                 .playerLevel(playerStatus.getPlayerLevel())
                 .playerBonus(playerStatus.getPlayerBonus())
                 .playerInRoom(playerStatus.isPlayerInRoom())
@@ -349,7 +349,7 @@ public class PlayerStatusFacade {
     private PlayerStatus createDefaultPlayerStatus(Long roomId, Long userId) {
         return PlayerStatus.builder()
                 .roomId(roomId)
-                .userId(userId)
+                .user(User.fromDto(getUserDto(userId)))
                 .classId(0L)
                 .twoClasses(false)
                 .secondClassId(0L)

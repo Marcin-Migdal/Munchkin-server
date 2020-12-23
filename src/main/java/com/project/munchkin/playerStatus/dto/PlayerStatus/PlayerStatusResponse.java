@@ -2,6 +2,7 @@ package com.project.munchkin.playerStatus.dto.PlayerStatus;
 
 import com.project.munchkin.playerStatus.dto.PlayerClassDto;
 import com.project.munchkin.playerStatus.dto.PlayerRaceDto;
+import com.project.munchkin.user.dto.UserResponse;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -14,8 +15,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PUBLIC)
 public class PlayerStatusResponse {
     Long id;
-    Long userId;
-    String userName;
+    UserResponse user;
     PlayerClassDto playerClassDto;
     PlayerClassDto secondPlayerClassDto;
     boolean twoClasses;

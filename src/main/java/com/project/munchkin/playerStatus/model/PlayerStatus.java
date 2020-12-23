@@ -1,6 +1,7 @@
 package com.project.munchkin.playerStatus.model;
 
 import com.project.munchkin.playerStatus.dto.PlayerStatus.PlayerStatusDto;
+import com.project.munchkin.user.model.User;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -25,26 +26,28 @@ public class PlayerStatus {
     @NotNull
     Long roomId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="id")
     @NotNull
-    Long userId;
+    User user;
 
     @NotNull
     Long classId;
 
     @NotNull
-    boolean twoClasses;
+    Long secondClassId;
 
     @NotNull
-    Long secondClassId;
+    boolean twoClasses;
 
     @NotNull
     Long raceId;
 
     @NotNull
-    boolean twoRaces;
+    Long secondRaceId;
 
     @NotNull
-    Long secondRaceId;
+    boolean twoRaces;
 
     @NotNull
     Long playerLevel;
@@ -61,14 +64,14 @@ public class PlayerStatus {
     public static PlayerStatus fromDto(PlayerStatusDto playerStatusDto) {
         return PlayerStatus.builder()
                 .id(playerStatusDto.getId())
+                .user(playerStatusDto.getUser())
                 .roomId(playerStatusDto.getRoomId())
-                .userId(playerStatusDto.getUserId())
                 .classId(playerStatusDto.getClassId())
-                .twoClasses(playerStatusDto.isTwoClasses())
                 .secondClassId(playerStatusDto.getSecondClassId())
+                .twoClasses(playerStatusDto.isTwoClasses())
                 .raceId(playerStatusDto.getRaceId())
-                .twoRaces(playerStatusDto.isTwoRaces())
                 .secondRaceId(playerStatusDto.getSecondRaceId())
+                .twoRaces(playerStatusDto.isTwoRaces())
                 .playerLevel(playerStatusDto.getPlayerLevel())
                 .playerBonus(playerStatusDto.getPlayerBonus())
                 .playerInRoom(playerStatusDto.isPlayerInRoom())
@@ -80,7 +83,7 @@ public class PlayerStatus {
         return PlayerStatusDto.builder()
                 .id(id)
                 .roomId(roomId)
-                .userId(userId)
+                .user(user)
                 .classId(classId)
                 .twoClasses(twoClasses)
                 .secondClassId(secondClassId)
