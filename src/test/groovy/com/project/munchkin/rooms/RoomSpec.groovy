@@ -14,7 +14,8 @@ class RoomSpec extends Specification {
     AuthenticationManager authenticationManager = Stub(AuthenticationManager)
     PasswordEncoder passwordEncoder = Stub(PasswordEncoder)
     JwtTokenProvider tokenProvider = Stub(JwtTokenProvider)
-    RoomRepository roomRepository = new RoomInMemoryRepository();
+
+    private RoomRepository roomRepository = new RoomInMemoryRepository()
     MunchkinTestUtils munchkinTestUtils = new MunchkinTestUtils(roomRepository, authenticationManager, tokenProvider, passwordEncoder)
 
     RoomFacade roomFacade = munchkinTestUtils.getRoomFacade()
@@ -79,7 +80,6 @@ class RoomSpec extends Specification {
     def "user is able to search rooms "() {
         given: "there is user and a room"
         def userResponse = munchkinTestUtils.registerUser("Frank", "Frank1234",
-
                 "Frank1234@gmail.com", "Frank1234", "male")
         munchkinTestUtils.createRoom("Sixth Testing Room", 3L, "WordButItsASecretWord", userResponse.getId())
         when: "user search for room"

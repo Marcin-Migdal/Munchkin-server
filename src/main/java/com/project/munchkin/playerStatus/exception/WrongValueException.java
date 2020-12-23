@@ -1,4 +1,4 @@
-package com.project.munchkin.playerStatus.domain;
+package com.project.munchkin.playerStatus.exception;
 
 import com.project.munchkin.base.exception.StatusException;
 import org.springframework.http.HttpStatus;

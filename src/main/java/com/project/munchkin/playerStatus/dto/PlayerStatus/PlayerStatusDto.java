@@ -12,14 +12,14 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PUBLIC)
 public class PlayerStatusDto {
     Long id;
-    Long roomId;
     Long userId;
+    Long roomId;
     Long classId;
-    boolean twoClasses;
     Long secondClassId;
+    boolean twoClasses;
     Long raceId;
-    boolean twoRaces;
     Long secondRaceId;
+    boolean twoRaces;
     Long playerLevel;
     Long playerBonus;
     boolean playerInRoom;

@@ -2,10 +2,7 @@ package com.project.munchkin.room.domain;
 
 import com.project.munchkin.playerStatus.model.PlayerStatus;
 import com.project.munchkin.playerStatus.repository.PlayerStatusRepository;
-import com.project.munchkin.room.dto.RoomDto;
-import com.project.munchkin.room.dto.RoomRequest;
-import com.project.munchkin.room.dto.RoomResponse;
-import com.project.munchkin.room.dto.RoomUpdateRequest;
+import com.project.munchkin.room.dto.*;
 import com.project.munchkin.room.exception.NotAuthorizedException;
 import com.project.munchkin.room.exception.ResourceNotFoundException;
 import com.project.munchkin.room.exception.RoomNameAlreadyExistsException;
@@ -37,10 +34,9 @@ public class RoomFacade {
     PlayerStatusRepository playerStatusRepository;
 
     public RoomResponse addRoom(RoomRequest roomRequest, Long userId) {
-        if (roomRepository.existsByRoomName(roomRequest.getRoomName())) {
-            throw new RoomNameAlreadyExistsException("RoomName " + roomRequest.getRoomName() + " is already taken!", HttpStatus.BAD_REQUEST);
+        if(roomRepository.existsByRoomName(roomRequest.getRoomName())) {
+            throw new RoomNameAlreadyExistsException("Room by name: " + roomRequest.getRoomName() + " already exists", HttpStatus.BAD_REQUEST);
         }
-
         Room room = Room.builder()
                 .roomName(roomRequest.getRoomName())
                 .slots(roomRequest.getSlots())
@@ -61,14 +57,14 @@ public class RoomFacade {
     }
 
     public Page<RoomResponse> getPageableRooms(int page, int pageSize) {
-        Page<Room> rooms = roomRepository.findAllInComplete(PageRequest.of(page, pageSize));
+        Page<Room> rooms = roomRepository.findAllComplete(PageRequest.of(page, pageSize));
         if(rooms.isEmpty()){
             throw new ResourceNotFoundException("Rooms", "page", page, HttpStatus.NOT_FOUND);
         }
         return rooms.map(Room::response);
     }
 
-    public Page<RoomResponse> searchPageableRoom(String searchValue, int page, int pageSize) {
+    public Page<RoomResponse> getPageableSearchedRoom(String searchValue, int page, int pageSize) {
         Page<Room> roomPage = roomRepository.searchPageableRoom(searchValue, PageRequest.of(page, pageSize, Sort.by("roomName")));
         if(roomPage.isEmpty()) {
             throw new ResourceNotFoundException("room", "room name", searchValue, HttpStatus.NOT_FOUND);
@@ -80,6 +76,10 @@ public class RoomFacade {
         RoomDto roomDto = roomRepository.findById(roomUpdateRequest.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Room", "roomId", roomUpdateRequest.getId(), HttpStatus.NOT_FOUND)).dto();
 
+        if(roomRepository.existsByRoomName(roomUpdateRequest.getRoomName())) {
+            throw new RoomNameAlreadyExistsException("Room by name: " + roomUpdateRequest.getRoomName() + " already exists", HttpStatus.BAD_REQUEST);
+        }
+
         isAuthorized(userId, roomDto.getUser().getId(), "edit this room");
 
         if(!roomUpdateRequest.getRoomName().isEmpty()){
@@ -90,8 +90,8 @@ public class RoomFacade {
             roomDto.setRoomPassword(roomUpdateRequest.getRoomPassword());
         }
 
-        roomRepository.save(Room.fromDto(roomDto));
-        return mapRoomDtoToRoomResponse(roomDto);
+        Room save = roomRepository.save(Room.fromDto(roomDto));
+        return save.response();
     }
 
     public void deleteRoom(Long roomId, Long userId) {
@@ -102,18 +102,6 @@ public class RoomFacade {
             playerStatusRepository.deleteAll(allPlayersStatuses);
         }
         roomRepository.deleteById(roomId);
-    }
-
-    private RoomResponse mapRoomDtoToRoomResponse(RoomDto roomDto) {
-        return RoomResponse.builder()
-                .id(roomDto.getId())
-                .roomName(roomDto.getRoomName())
-                .slots(roomDto.getSlots())
-                .usersInRoom(roomDto.getUsersInRoom())
-                .isComplete(roomDto.isComplete())
-                .creatorId(roomDto.getUser().getId())
-                .roomPassword(roomDto.getRoomPassword())
-                .build();
     }
 
     private User getUser(Long userId){

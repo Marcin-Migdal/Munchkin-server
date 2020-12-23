@@ -98,7 +98,7 @@ class PlayerStatusSpec extends Specification {
         playerStatusFacade.joinRoom(roomResponse.getId(), roomResponse.getRoomPassword(), userResponse.getId())
         def playerStatusResponseByRoomId = playerStatusFacade.getPlayerStatusResponseByRoomId(roomResponse.getId(), userResponse.getId())
         when: "user tries to get player status"
-        def playerStatusResponse = playerStatusFacade.getPlayerStatusResponseById(playerStatusResponseByRoomId.getPlayerStatusId())
+        def playerStatusResponse = playerStatusFacade.getPlayerStatusResponseById(playerStatusResponseByRoomId.getId())
         then: "user successfully gets player status"
         playerStatusResponse
     }
@@ -123,7 +123,7 @@ class PlayerStatusSpec extends Specification {
         playerStatusFacade.joinRoom(roomResponse.getId(), roomResponse.getRoomPassword(), userResponse.getId())
         def playerStatusResponseBefore = playerStatusFacade.getPlayerStatusResponseByRoomId(roomResponse.getId(), userResponse.getId())
         when: "user tries to set player level "
-        playerStatusFacade.setPlayerLevel(playerStatusResponseBefore.getPlayerStatusId(), 1)
+        playerStatusFacade.setPlayerLevel(playerStatusResponseBefore.getId(), 1)
         then: "user successfully sets player level"
         def playerStatusResponseAfter = playerStatusFacade.getPlayerStatusResponseByRoomId(roomResponse.getId(), userResponse.getId())
         playerStatusResponseAfter.getPlayerLevel() > playerStatusResponseBefore.getPlayerLevel()
@@ -137,7 +137,7 @@ class PlayerStatusSpec extends Specification {
         playerStatusFacade.joinRoom(roomResponse.getId(), roomResponse.getRoomPassword(), userResponse.getId())
         def playerStatusResponseBefore = playerStatusFacade.getPlayerStatusResponseByRoomId(roomResponse.getId(), userResponse.getId())
         when: "user tries to set player bonus "
-        playerStatusFacade.setPlayerBonus(playerStatusResponseBefore.getPlayerStatusId(), 1)
+        playerStatusFacade.setPlayerBonus(playerStatusResponseBefore.getId(), 1)
         then: "user successfully sets player bonus"
         def playerStatusResponseAfter = playerStatusFacade.getPlayerStatusResponseByRoomId(roomResponse.getId(), userResponse.getId())
         playerStatusResponseAfter.getPlayerBonus() > playerStatusResponseBefore.getPlayerBonus()
@@ -151,7 +151,7 @@ class PlayerStatusSpec extends Specification {
         playerStatusFacade.joinRoom(roomResponse.getId(), roomResponse.getRoomPassword(), userResponse.getId())
         def playerStatusResponseBefore = playerStatusFacade.getPlayerStatusResponseByRoomId(roomResponse.getId(), userResponse.getId())
         when: "user tries to change player gender "
-        playerStatusFacade.changeGender(playerStatusResponseBefore.getPlayerStatusId())
+        playerStatusFacade.changeGender(playerStatusResponseBefore.getId())
         then: "user successfully changed player gender"
         def playerStatusResponseAfter = playerStatusFacade.getPlayerStatusResponseByRoomId(roomResponse.getId(), userResponse.getId())
         playerStatusResponseAfter.getGender() != playerStatusResponseBefore.getGender()
@@ -165,7 +165,7 @@ class PlayerStatusSpec extends Specification {
         playerStatusFacade.joinRoom(roomResponse.getId(), roomResponse.getRoomPassword(), userResponse.getId())
         def playerStatusResponseBefore = playerStatusFacade.getPlayerStatusResponseByRoomId(roomResponse.getId(), userResponse.getId())
         when: "user tries to change player race"
-        playerStatusFacade.setFirstRace(playerStatusResponseBefore.getPlayerStatusId(), 1)
+        playerStatusFacade.setFirstRace(playerStatusResponseBefore.getId(), 1)
         then: "user successfully changed player race"
         def playerStatusResponseAfter = playerStatusFacade.getPlayerStatusResponseByRoomId(roomResponse.getId(), userResponse.getId())
         playerStatusResponseAfter.getPlayerRaceDto().getId() == 1
@@ -179,7 +179,7 @@ class PlayerStatusSpec extends Specification {
         playerStatusFacade.joinRoom(roomResponse.getId(), roomResponse.getRoomPassword(), userResponse.getId())
         def playerStatusResponse = playerStatusFacade.getPlayerStatusResponseByRoomId(roomResponse.getId(), userResponse.getId())
         when: "user tries to allow player to have two races"
-        def isTwoRaces = playerStatusFacade.toggleTwoRaces(playerStatusResponse.getPlayerStatusId())
+        def isTwoRaces = playerStatusFacade.toggleTwoRaces(playerStatusResponse.getId())
         then: "player can have two races"
         isTwoRaces==true
     }
@@ -191,9 +191,9 @@ class PlayerStatusSpec extends Specification {
         def roomResponse = munchkinTestUtils.createRoom("Eleventh Testing Room", 3L, "WordButItsASecretWord", userResponse.getId())
         playerStatusFacade.joinRoom(roomResponse.getId(), roomResponse.getRoomPassword(), userResponse.getId())
         def playerStatusResponseBefore = playerStatusFacade.getPlayerStatusResponseByRoomId(roomResponse.getId(), userResponse.getId())
-        playerStatusFacade.toggleTwoRaces(playerStatusResponseBefore.getPlayerStatusId())
+        playerStatusFacade.toggleTwoRaces(playerStatusResponseBefore.getId())
         when: "user tries to change second player race "
-        playerStatusFacade.setSecondRace(playerStatusResponseBefore.getPlayerStatusId(), 1)
+        playerStatusFacade.setSecondRace(playerStatusResponseBefore.getId(), 1)
         then: "user successfully changed second player race"
         def playerStatusResponseAfter = playerStatusFacade.getPlayerStatusResponseByRoomId(roomResponse.getId(), userResponse.getId())
         playerStatusResponseAfter.getSecondPlayerRaceDto().getId() == 1
@@ -209,7 +209,7 @@ class PlayerStatusSpec extends Specification {
         playerStatusFacade.joinRoom(roomResponse.getId(), roomResponse.getRoomPassword(), userResponse.getId())
         def playerStatusResponseBefore = playerStatusFacade.getPlayerStatusResponseByRoomId(roomResponse.getId(), userResponse.getId())
         when: "user tries to change player class"
-        playerStatusFacade.setFirstClass(playerStatusResponseBefore.getPlayerStatusId(), 1)
+        playerStatusFacade.setFirstClass(playerStatusResponseBefore.getId(), 1)
         then: "user successfully changed player class"
         def playerStatusResponseAfter = playerStatusFacade.getPlayerStatusResponseByRoomId(roomResponse.getId(), userResponse.getId())
         playerStatusResponseAfter.getPlayerClassDto().getId() == 1
@@ -223,7 +223,7 @@ class PlayerStatusSpec extends Specification {
         playerStatusFacade.joinRoom(roomResponse.getId(), roomResponse.getRoomPassword(), userResponse.getId())
         def playerStatusResponse = playerStatusFacade.getPlayerStatusResponseByRoomId(roomResponse.getId(), userResponse.getId())
         when: "user tries to allow player to have two classes"
-        def isTwoClasses = playerStatusFacade.toggleTwoClasses(playerStatusResponse.getPlayerStatusId())
+        def isTwoClasses = playerStatusFacade.toggleTwoClasses(playerStatusResponse.getId())
         then: "player can have two classes"
         isTwoClasses
     }
@@ -235,9 +235,9 @@ class PlayerStatusSpec extends Specification {
         def roomResponse = munchkinTestUtils.createRoom("Fourteenth Testing Room", 3L, "WordButItsASecretWord", userResponse.getId())
         playerStatusFacade.joinRoom(roomResponse.getId(), roomResponse.getRoomPassword(), userResponse.getId())
         def playerStatusResponseBefore = playerStatusFacade.getPlayerStatusResponseByRoomId(roomResponse.getId(), userResponse.getId())
-        playerStatusFacade.toggleTwoClasses(playerStatusResponseBefore.getPlayerStatusId())
+        playerStatusFacade.toggleTwoClasses(playerStatusResponseBefore.getId())
         when: "user tries to change second player class "
-        playerStatusFacade.setSecondClass(playerStatusResponseBefore.getPlayerStatusId(), 1)
+        playerStatusFacade.setSecondClass(playerStatusResponseBefore.getId(), 1)
         then: "user successfully changed second player class"
         def playerStatusResponseAfter = playerStatusFacade.getPlayerStatusResponseByRoomId(roomResponse.getId(), userResponse.getId())
         playerStatusResponseAfter.getSecondPlayerClassDto().getId() == 1
@@ -251,9 +251,9 @@ class PlayerStatusSpec extends Specification {
         playerStatusFacade.joinRoom(roomResponse.getId(), roomResponse.getRoomPassword(), userResponse.getId())
         def playerStatusResponse = playerStatusFacade.getPlayerStatusResponseByRoomId(roomResponse.getId(), userResponse.getId())
         when: "user tries to delete player status"
-        playerStatusFacade.deletePlayerStatus(playerStatusResponse.getPlayerStatusId(), userResponse.getId())
+        playerStatusFacade.deletePlayerStatus(playerStatusResponse.getId(), userResponse.getId())
         then: "user successfully deleted player status"
-        !playerStatusRepository.existsById(playerStatusResponse.getPlayerStatusId())
+        !playerStatusRepository.existsById(playerStatusResponse.getId())
     }
 
     def "user can delete all player statuses in the room"() {

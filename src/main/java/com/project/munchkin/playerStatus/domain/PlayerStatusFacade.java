@@ -6,6 +6,7 @@ import com.project.munchkin.playerStatus.dto.PlayerStatus.PlayerStatusDto;
 import com.project.munchkin.playerStatus.dto.PlayerStatus.PlayerStatusResponse;
 import com.project.munchkin.playerStatus.exception.RoomIsFullException;
 import com.project.munchkin.playerStatus.exception.UserAlreadyInRoomException;
+import com.project.munchkin.playerStatus.exception.WrongValueException;
 import com.project.munchkin.playerStatus.model.PlayerClass;
 import com.project.munchkin.playerStatus.model.PlayerRace;
 import com.project.munchkin.playerStatus.model.PlayerStatus;
@@ -329,7 +330,7 @@ public class PlayerStatusFacade {
 
     private PlayerStatusResponse toPlayerStatusResponse(PlayerStatus playerStatus) {
         return PlayerStatusResponse.builder()
-                .playerStatusId(playerStatus.getId())
+                .id(playerStatus.getId())
                 .userId(playerStatus.getUserId())
                 .userName(getUserDto(playerStatus.getUserId()).getUsername())
                 .playerClassDto(getClass(playerStatus.getClassId()))

@@ -13,15 +13,15 @@ import lombok.experimental.FieldDefaults;
 @Setter
 @FieldDefaults(level = AccessLevel.PUBLIC)
 public class PlayerStatusResponse {
-    Long playerStatusId;
+    Long id;
     Long userId;
     String userName;
     PlayerClassDto playerClassDto;
-    boolean twoClasses;
     PlayerClassDto secondPlayerClassDto;
+    boolean twoClasses;
     PlayerRaceDto playerRaceDto;
-    boolean twoRaces;
     PlayerRaceDto secondPlayerRaceDto;
+    boolean twoRaces;
     Long playerLevel;
     Long playerBonus;
     boolean playerInRoom;

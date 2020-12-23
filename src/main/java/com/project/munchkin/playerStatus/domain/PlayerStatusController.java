@@ -11,6 +11,7 @@ import com.project.munchkin.playerStatus.dto.PlayerRaceDto;
 import com.project.munchkin.playerStatus.dto.PlayerStatus.PlayerStatusResponse;
 import com.project.munchkin.playerStatus.exception.RoomIsFullException;
 import com.project.munchkin.playerStatus.exception.UserAlreadyInRoomException;
+import com.project.munchkin.playerStatus.exception.WrongValueException;
 import com.project.munchkin.room.exception.NotAuthorizedException;
 import com.project.munchkin.room.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;

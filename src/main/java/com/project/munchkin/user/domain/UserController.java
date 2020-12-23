@@ -47,7 +47,7 @@ public class UserController {
     public ResponseEntity<?> getCurrentUser(@CurrentUser UserPrincipal currentUser){
         try{
             UserResponse userResponse = userFacade.getUserResponse(currentUser.getId());
-            return ResponseEntity.ok().body(new ApiResponse <UserResponse>(true, "User registered successfully", userResponse));
+            return ResponseEntity.ok().body(new ApiResponse <UserResponse>(true, "User response was found successfully", userResponse));
         }catch ( ResourceNotFoundException e){
             return new ResponseEntity<>(new ApiResponse<>(false, e.getMessage()), e.getHttpStatus());
         }

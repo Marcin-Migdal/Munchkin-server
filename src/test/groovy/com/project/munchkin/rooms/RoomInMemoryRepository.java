@@ -163,7 +163,7 @@ public class RoomInMemoryRepository implements RoomRepository {
     }
 
     @Override
-    public Page<Room> findAllInComplete(Pageable pageable) {
+    public Page<Room> findAllComplete(Pageable pageable) {
         List<Room> roomList = rooms.values().stream()
                 .filter(room -> !room.isComplete())
                 .collect(Collectors.toList());
