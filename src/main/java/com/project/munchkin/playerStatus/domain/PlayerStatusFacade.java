@@ -18,7 +18,6 @@ import com.project.munchkin.room.exception.NotAuthorizedException;
 import com.project.munchkin.room.exception.ResourceNotFoundException;
 import com.project.munchkin.room.model.Room;
 import com.project.munchkin.room.repository.RoomRepository;
-import com.project.munchkin.user.dto.UserDto;
 import com.project.munchkin.user.model.User;
 import com.project.munchkin.user.repository.UserRepository;
 import lombok.Builder;
@@ -82,7 +81,8 @@ public class PlayerStatusFacade {
     }
 
     public void joinRoom(Long roomId, String roomPassword, Long userId) {
-        if(playerStatusRepository.playerIsInAnyRoom(userId)){
+        User user = getUser(userId);
+        if(playerStatusRepository.playerIsInAnyRoom(user)){
             throw new UserAlreadyInRoomException(userId, HttpStatus.BAD_REQUEST);
         }
 
@@ -94,10 +94,10 @@ public class PlayerStatusFacade {
 
         if (roomDto.getRoomPassword().equals(roomPassword)) {
             try {
-                PlayerStatusDto playerStatusDto = getPlayerStatusEntityByRoomId(roomId, userId).dto();
+                PlayerStatusDto playerStatusDto = getPlayerStatusEntityByRoomId(roomId, user).dto();
                 updatePlayerInRoomAndUserInRoom(roomDto, playerStatusDto, true);
             } catch (ResourceNotFoundException e) {
-                PlayerStatusDto playerStatusDto = createDefaultPlayerStatus(roomId, userId).dto();
+                PlayerStatusDto playerStatusDto = createDefaultPlayerStatus(roomId, user).dto();
                 updatePlayerInRoomAndUserInRoom(roomDto, playerStatusDto, true);
             }
         } else {
@@ -107,7 +107,7 @@ public class PlayerStatusFacade {
 
     public void exitRoom(Long roomId, Long userId) {
         RoomDto roomDto = getRoomDto(roomId);
-        PlayerStatusDto playerStatusDto = getPlayerStatusEntityByRoomId(roomId, userId).dto();
+        PlayerStatusDto playerStatusDto = getPlayerStatusEntityByRoomId(roomId, getUser(userId)).dto();
 
         playerInRoom(playerStatusDto.playerInRoom, "leave a room that you are not in");
 
@@ -115,7 +115,7 @@ public class PlayerStatusFacade {
     }
 
     public PlayerStatusResponse getPlayerStatusResponseByRoomId(Long roomId , Long userId) {
-        PlayerStatus playerStatus = getPlayerStatusEntityByRoomId(roomId, userId);
+        PlayerStatus playerStatus = getPlayerStatusEntityByRoomId(roomId, getUser(userId));
         return toPlayerStatusResponse(playerStatus);
     }
 
@@ -306,9 +306,9 @@ public class PlayerStatusFacade {
         return playerStatusRepository.findAllPlayerStatusByRoomId(roomId);
     }
 
-    private PlayerStatus getPlayerStatusEntityByRoomId(Long roomId, Long userId) {
-        return playerStatusRepository.findByRoomIdAndUserId(roomId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Player Status", "roomId: "+ roomId + " and userId", userId, HttpStatus.NOT_FOUND));
+    private PlayerStatus getPlayerStatusEntityByRoomId(Long roomId, User user) {
+        return playerStatusRepository.findByRoomIdAndUserId(roomId, user)
+                .orElseThrow(() -> new ResourceNotFoundException("Player Status", "roomId: "+ roomId + " and userId", user.getId(), HttpStatus.NOT_FOUND));
     }
 
     private PlayerStatus getPlayerStatusEntityById(Long playerStatusId) {
@@ -346,10 +346,10 @@ public class PlayerStatusFacade {
                 .build();
     }
 
-    private PlayerStatus createDefaultPlayerStatus(Long roomId, Long userId) {
+    private PlayerStatus createDefaultPlayerStatus(Long roomId, User user) {
         return PlayerStatus.builder()
                 .roomId(roomId)
-                .user(User.fromDto(getUserDto(userId)))
+                .user(user)
                 .classId(0L)
                 .twoClasses(false)
                 .secondClassId(0L)
@@ -359,13 +359,13 @@ public class PlayerStatusFacade {
                 .playerLevel(1L)
                 .playerBonus(0L)
                 .playerInRoom(true)
-                .gender(getUserDto(userId).getGender())
+                .gender(user.getGender())
                 .build();
     }
 
-    private UserDto getUserDto(Long userId){
+    private User getUser(Long userId){
         return userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "UserId", userId, HttpStatus.NOT_FOUND)).dto();
+                .orElseThrow(() -> new ResourceNotFoundException("User", "UserId", userId, HttpStatus.NOT_FOUND));
     }
 
     private RoomDto getRoomDto(Long roomId) {

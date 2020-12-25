@@ -2,6 +2,7 @@ package groovy.com.project.munchkin.playerStatus;
 
 import com.project.munchkin.playerStatus.model.PlayerStatus;
 import com.project.munchkin.playerStatus.repository.PlayerStatusRepository;
+import com.project.munchkin.user.model.User;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,18 +21,18 @@ public class PlayerStatusInMemoryRepository implements PlayerStatusRepository {
     }
 
     @Override
-    public Optional<PlayerStatus> findByRoomIdAndUserId(Long roomId, Long userId) {
+    public Optional<PlayerStatus> findByRoomIdAndUserId(Long roomId, User user) {
         Optional<PlayerStatus> playerStatus = playerStatuses.values().stream()
-                .filter((item) -> item.getRoomId() == roomId && item.getUserId() == userId)
+                .filter((item) -> item.getRoomId() == roomId && item.getUser().getId() == user.getId())
                 .findFirst();
 
         return playerStatus;
     }
 
     @Override
-    public boolean playerIsInAnyRoom(Long userId) {
+    public boolean playerIsInAnyRoom(User user) {
         List<PlayerStatus> oneUserPlayerStatuses = playerStatuses.values().stream()
-                .filter((item) -> item.getUserId() == userId)
+                .filter((item) -> item.getUser().getId() == user.getId())
                 .collect(Collectors.toList());
         if(!oneUserPlayerStatuses.isEmpty()){
             return true;

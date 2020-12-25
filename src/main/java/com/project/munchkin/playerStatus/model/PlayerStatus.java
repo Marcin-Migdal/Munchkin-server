@@ -26,9 +26,8 @@ public class PlayerStatus {
     @NotNull
     Long roomId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="id")
-    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user", nullable = false)
     User user;
 
     @NotNull
@@ -64,10 +63,10 @@ public class PlayerStatus {
     public static PlayerStatus fromDto(PlayerStatusDto playerStatusDto) {
         return PlayerStatus.builder()
                 .id(playerStatusDto.getId())
-                .user(playerStatusDto.getUser())
                 .roomId(playerStatusDto.getRoomId())
-                .classId(playerStatusDto.getClassId())
+                .user(playerStatusDto.getUser())
                 .secondClassId(playerStatusDto.getSecondClassId())
+                .classId(playerStatusDto.getClassId())
                 .twoClasses(playerStatusDto.isTwoClasses())
                 .raceId(playerStatusDto.getRaceId())
                 .secondRaceId(playerStatusDto.getSecondRaceId())
@@ -85,11 +84,11 @@ public class PlayerStatus {
                 .roomId(roomId)
                 .user(user)
                 .classId(classId)
-                .twoClasses(twoClasses)
                 .secondClassId(secondClassId)
+                .twoClasses(twoClasses)
                 .raceId(raceId)
-                .twoRaces(twoRaces)
                 .secondRaceId(secondRaceId)
+                .twoRaces(twoRaces)
                 .playerLevel(playerLevel)
                 .playerBonus(playerBonus)
                 .playerInRoom(playerInRoom)

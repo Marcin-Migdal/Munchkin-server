@@ -50,12 +50,8 @@ public class RoomController {
 
     @GetMapping("/getAll/{page}/{pageSize}")
     public ResponseEntity<?> getPageableRooms(@PathVariable int page, @PathVariable int pageSize) {
-        try{
-            Page<RoomResponse> pageableRooms = roomFacade.getPageableRooms(page, pageSize);
-            return ResponseEntity.ok().body(new ApiResponse <Page<RoomResponse>>(true, pageSize + " rooms in page: " + page + " was returned successfully", pageableRooms));
-        }catch (ResourceNotFoundException e){
-            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
-        }
+        Page<RoomResponse> pageableRooms = roomFacade.getPageableRooms(page, pageSize);
+        return ResponseEntity.ok().body(new ApiResponse <Page<RoomResponse>>(true, pageSize + " rooms in page: " + page + " was returned successfully", pageableRooms));
     }
 
     @GetMapping("/search/{searchValue}/{page}/{pageSize}")

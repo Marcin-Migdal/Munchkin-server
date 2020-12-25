@@ -83,7 +83,7 @@ class RoomSpec extends Specification {
                 "Frank1234@gmail.com", "Frank1234", "male")
         munchkinTestUtils.createRoom("Sixth Testing Room", 3L, "WordButItsASecretWord", userResponse.getId())
         when: "user search for room"
-        def pageableRoomResponse = roomFacade.searchPageableRoom("S", 0, 1)
+        def pageableRoomResponse = roomFacade.getPageableSearchedRoom("S", 0, 1)
         then: "user gets room"
         !pageableRoomResponse.isEmpty()
     }

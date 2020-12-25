@@ -58,9 +58,6 @@ public class RoomFacade {
 
     public Page<RoomResponse> getPageableRooms(int page, int pageSize) {
         Page<Room> rooms = roomRepository.findAllComplete(PageRequest.of(page, pageSize));
-        if(rooms.isEmpty()){
-            throw new ResourceNotFoundException("Rooms", "page", page, HttpStatus.NOT_FOUND);
-        }
         return rooms.map(Room::response);
     }
 
