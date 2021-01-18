@@ -82,26 +82,29 @@ public class PlayerStatusFacade {
 
     public void joinRoom(Long roomId, String roomPassword, Long userId) {
         User user = getUser(userId);
+
+        RoomDto roomDto = getRoomDto(roomId);
+        if (!roomDto.getRoomPassword().equals(roomPassword)) {
+            throw new NotAuthorizedException("join this room, wrong password",HttpStatus.UNAUTHORIZED);
+        }
+
         if(playerStatusRepository.playerIsInAnyRoom(user)){
             throw new UserAlreadyInRoomException(userId, HttpStatus.BAD_REQUEST);
         }
 
-        RoomDto roomDto = getRoomDto(roomId);
+        List<PlayerStatus> allPlayerStatus = getAllPlayerStatusInRoom(roomId);
+        allPlayerStatus.removeIf(playerStatus -> playerStatus.getUser().getId().equals(userId));
 
-        if(roomDto.getSlots() <= getAllPlayerStatus(roomId).size() || roomRepository.isRoomFull(roomId)){
+        if(roomDto.getSlots() <= allPlayerStatus.size() || roomRepository.isRoomFull(roomId)){
             throw new RoomIsFullException(HttpStatus.BAD_REQUEST);
         }
 
-        if (roomDto.getRoomPassword().equals(roomPassword)) {
-            try {
-                PlayerStatusDto playerStatusDto = getPlayerStatusEntityByRoomId(roomId, user).dto();
-                updatePlayerInRoomAndUserInRoom(roomDto, playerStatusDto, true);
-            } catch (ResourceNotFoundException e) {
-                PlayerStatusDto playerStatusDto = createDefaultPlayerStatus(roomId, user).dto();
-                updatePlayerInRoomAndUserInRoom(roomDto, playerStatusDto, true);
-            }
-        } else {
-            throw new NotAuthorizedException("join this room, wrong password",HttpStatus.UNAUTHORIZED);
+        try {
+            PlayerStatusDto playerStatusDto = getPlayerStatusEntityByRoomId(roomId, user).dto();
+            updatePlayerInRoomAndUserInRoom(roomDto, playerStatusDto, true);
+        } catch (ResourceNotFoundException e) {
+            PlayerStatusDto playerStatusDto = createDefaultPlayerStatus(roomId, user).dto();
+            updatePlayerInRoomAndUserInRoom(roomDto, playerStatusDto, true);
         }
     }
 
@@ -124,8 +127,20 @@ public class PlayerStatusFacade {
         return toPlayerStatusResponse(playerStatus);
     }
 
-    public List<PlayerStatusResponse> getAllPlayersStatusResponse(Long roomId) {
-        List<PlayerStatus> allPlayerStatus = getAllPlayerStatus(roomId);
+    public List<PlayerStatusResponse> getAllPlayersStatusesResponse(Long roomId) {
+        List<PlayerStatus> allPlayerStatus = getAllPlayerStatusInRoom(roomId);
+        if(allPlayerStatus.isEmpty()){
+            throw new ResourceNotFoundException("Players Statuses","roomId", roomId, HttpStatus.NOT_FOUND);
+        }else{
+            return allPlayerStatus
+                    .stream()
+                    .map(this::toPlayerStatusResponse)
+                    .collect(Collectors.toList());
+        }
+    }
+
+    public List<PlayerStatusResponse> getPlayersStatusesResponseInRoom(Long roomId) {
+        List<PlayerStatus> allPlayerStatus = playerStatusRepository.findAllPlayerStatusesInRoom(roomId);
         if(allPlayerStatus.isEmpty()){
             throw new ResourceNotFoundException("Players Statuses","roomId", roomId, HttpStatus.NOT_FOUND);
         }else{
@@ -279,7 +294,7 @@ public class PlayerStatusFacade {
             throw new NotAuthorizedException("delete all player statuses in this room because you are not creator of this room" , HttpStatus.UNAUTHORIZED);
         }
 
-        List<PlayerStatus> allPlayersStatuses = getAllPlayerStatus(roomId);
+        List<PlayerStatus> allPlayersStatuses = getAllPlayerStatusInRoom(roomId);
 
         if (allPlayersStatuses.isEmpty()){
             throw new ResourceNotFoundException("Players Statuses","roomId", roomId, HttpStatus.NOT_FOUND);
@@ -302,8 +317,8 @@ public class PlayerStatusFacade {
         }
     }
 
-    private List<PlayerStatus> getAllPlayerStatus(Long roomId) {
-        return playerStatusRepository.findAllPlayerStatusByRoomId(roomId);
+    private List<PlayerStatus> getAllPlayerStatusInRoom(Long roomId) {
+        return playerStatusRepository.findAllPlayerStatusesByRoomId(roomId);
     }
 
     private PlayerStatus getPlayerStatusEntityByRoomId(Long roomId, User user) {
@@ -351,11 +366,11 @@ public class PlayerStatusFacade {
                 .roomId(roomId)
                 .user(user)
                 .classId(0L)
-                .twoClasses(false)
                 .secondClassId(0L)
+                .twoClasses(false)
                 .raceId(0L)
-                .twoRaces(false)
                 .secondRaceId(0L)
+                .twoRaces(false)
                 .playerLevel(1L)
                 .playerBonus(0L)
                 .playerInRoom(true)

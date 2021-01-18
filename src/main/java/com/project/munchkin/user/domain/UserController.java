@@ -10,11 +10,16 @@ import com.project.munchkin.user.dto.authRequests.SignUpRequest;
 import com.project.munchkin.user.exception.EmailAlreadyExistsException;
 import com.project.munchkin.user.exception.UsernameAlreadyExistsException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.validation.Valid;
+import java.io.IOException;
 import java.net.URI;
 
 @RestController
@@ -45,8 +50,13 @@ public class UserController {
 
     @GetMapping("/user")
     public ResponseEntity<?> getCurrentUser(@CurrentUser UserPrincipal currentUser){
+        return getUser(currentUser.getId());
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<?> getUser(@PathVariable Long userId){
         try{
-            UserResponse userResponse = userFacade.getUserResponse(currentUser.getId());
+            UserResponse userResponse = userFacade.getUserResponse(userId);
             return ResponseEntity.ok().body(new ApiResponse <UserResponse>(true, "User response was found successfully", userResponse));
         }catch ( ResourceNotFoundException e){
             return new ResponseEntity<>(new ApiResponse<>(false, e.getMessage()), e.getHttpStatus());
@@ -66,7 +76,7 @@ public class UserController {
     @PatchMapping("/changePassword")
     public ResponseEntity<?> changeUserPassword(@Valid @RequestBody ChangePasswordRequest changePasswordRequest, @CurrentUser UserPrincipal currentUser) {
         try{
-            userFacade.changeUserPassword(changePasswordRequest.getUserPassword(), currentUser.getId());
+            userFacade.editPasswordAuthorization(changePasswordRequest, currentUser.getId());
             return ResponseEntity.ok().body(new ApiResponse <>(true, "Password was changed successfully"));
         }catch (ResourceNotFoundException e){
             return new ResponseEntity<>(new ApiResponse<>(false, e.getMessage()), e.getHttpStatus());
@@ -82,4 +92,36 @@ public class UserController {
             return new ResponseEntity<>(new ApiResponse<>(false, e.getMessage()), e.getHttpStatus());
         }
     }
+
+    @PostMapping("/editAvatar")
+    public ResponseEntity<?> editAvatar(@Valid @RequestParam("image") MultipartFile imageFile, @CurrentUser UserPrincipal currentUser) {
+        try{
+            userFacade.editAvatar(imageFile, currentUser.getId());
+            return ResponseEntity.ok().body(new ApiResponse <>(true, "file "+ imageFile.getOriginalFilename() + " uploaded successfully"));
+        }catch (IOException e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(new ApiResponse<>(false, "Error occurred while trying to edit avatar"), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @GetMapping("/getAvatar/{userId}")
+    public ResponseEntity<?> getAvatar(@PathVariable Long userId) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setCacheControl(CacheControl.noCache().getHeaderValue());
+        try {
+            byte[] media  = userFacade.getAvatar(userId);
+            return new ResponseEntity<>(media, headers, HttpStatus.OK);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(new ApiResponse<>(false, "Error occurred while trying to get avatar"), HttpStatus.NOT_FOUND);
+        } catch (ResourceNotFoundException e) {
+            return new ResponseEntity<>(new ApiResponse<>(false, e.getMessage()), e.getHttpStatus());
+        }
+    }
+
+    @GetMapping("/getCurrentUserAvatar")
+    public ResponseEntity<?> getCurrentUserAvatar(@CurrentUser UserPrincipal currentUser) {
+        return getAvatar(currentUser.getId());
+    }
+    
 }

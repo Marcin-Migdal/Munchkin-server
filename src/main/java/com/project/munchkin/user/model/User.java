@@ -48,7 +48,6 @@ public class User extends DateAudit {
     @Size(max = 100)
     String userPassword;
 
-    @NotBlank
     String iconUrl;
 
     @NotBlank
@@ -93,7 +92,6 @@ public class User extends DateAudit {
                 .id(id)
                 .inGameName(inGameName)
                 .username(username)
-                .iconUrl(iconUrl)
                 .gender(gender)
                 .build();
     }

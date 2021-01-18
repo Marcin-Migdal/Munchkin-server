@@ -32,7 +32,7 @@ public class RoomController {
             URI location = ServletUriComponentsBuilder
                     .fromCurrentRequest().path("/byRoomId/{roomId}")
                     .buildAndExpand(roomResponse.getId()).toUri();
-            return ResponseEntity.created(location).body(new ApiResponse <RoomResponse>(true, "Room created successfully", roomResponse));
+            return ResponseEntity.created(location).body(new ApiResponse <>(true, "Room created successfully", roomResponse));
         }catch (RoomNameAlreadyExistsException e){
             return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
         }
@@ -42,7 +42,7 @@ public class RoomController {
     public ResponseEntity<?> getRoom(@PathVariable Long roomId) {
         try {
             RoomResponse roomResponse = roomFacade.getRoom(roomId);
-            return ResponseEntity.ok().body(new ApiResponse <RoomResponse>(true, "Room with id: " + roomId + " was found successfully", roomResponse));
+            return ResponseEntity.ok().body(new ApiResponse <>(true, "Room with id: " + roomId + " was found successfully", roomResponse));
         }catch (ResourceNotFoundException e){
             return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
         }
@@ -51,14 +51,14 @@ public class RoomController {
     @GetMapping("/getAll/{page}/{pageSize}")
     public ResponseEntity<?> getPageableRooms(@PathVariable int page, @PathVariable int pageSize) {
         Page<RoomResponse> pageableRooms = roomFacade.getPageableRooms(page, pageSize);
-        return ResponseEntity.ok().body(new ApiResponse <Page<RoomResponse>>(true, pageSize + " rooms in page: " + page + " was returned successfully", pageableRooms));
+        return ResponseEntity.ok().body(new ApiResponse <>(true, pageSize + " rooms in page: " + page + " was returned successfully", pageableRooms));
     }
 
     @GetMapping("/search/{searchValue}/{page}/{pageSize}")
     public ResponseEntity<?> searchPageableRoom(@PathVariable String searchValue, @PathVariable int page, @PathVariable int pageSize) {
         try{
             Page<RoomResponse> pageableRooms = roomFacade.getPageableSearchedRoom(searchValue, page, pageSize);
-            return ResponseEntity.ok().body(new ApiResponse <Page<RoomResponse>>(true, pageSize + " rooms in page: " + page + " was found successfully", pageableRooms));
+            return ResponseEntity.ok().body(new ApiResponse <>(true, pageSize + " rooms in page: " + page + " was found successfully", pageableRooms));
         }catch (ResourceNotFoundException e){
             return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
         }
@@ -68,7 +68,7 @@ public class RoomController {
     public ResponseEntity<?> editRoom(@Valid @RequestBody RoomUpdateRequest roomUpdateRequest, @CurrentUser UserPrincipal currentUser) {
         try{
             RoomResponse roomResponse = roomFacade.editRoom(roomUpdateRequest, currentUser.getId());
-            return ResponseEntity.ok().body(new ApiResponse <RoomResponse>(true, "Room was edited successfully", roomResponse));
+            return ResponseEntity.ok().body(new ApiResponse <>(true, "Room was edited successfully", roomResponse));
         }catch (ResourceNotFoundException | RoomNameAlreadyExistsException | NotAuthorizedException e){
             return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
         }

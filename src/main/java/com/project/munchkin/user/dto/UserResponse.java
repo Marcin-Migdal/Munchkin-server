@@ -12,6 +12,5 @@ public class UserResponse {
     Long id;
     String username;
     String inGameName;
-    String iconUrl;
     String gender;
 }

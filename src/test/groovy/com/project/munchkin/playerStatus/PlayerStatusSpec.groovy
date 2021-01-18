@@ -110,7 +110,7 @@ class PlayerStatusSpec extends Specification {
         def roomResponse = munchkinTestUtils.createRoom("Fifth Testing Room", 3L, "WordButItsASecretWord", userResponse.getId())
         playerStatusFacade.joinRoom(roomResponse.getId(), roomResponse.getRoomPassword(), userResponse.getId())
         when: "user tries to get all player statuses in one room"
-        def allPlayersStatusResponse = playerStatusFacade.getAllPlayersStatusResponse(roomResponse.getId())
+        def allPlayersStatusResponse = playerStatusFacade.getAllPlayersStatusesResponse(roomResponse.getId())
         then: "user successfully gets all player statuses in one room"
         !allPlayersStatusResponse.isEmpty()
     }
@@ -267,7 +267,7 @@ class PlayerStatusSpec extends Specification {
         playerStatusFacade.joinRoom(roomResponse.getId(), roomResponse.getRoomPassword(), userResponse2.getId())
         when: "user tries to delete all player statuses in the room"
         playerStatusFacade.deletePlayersStatuses(roomResponse.getId(), userResponse1.getId())
-        playerStatusFacade.getAllPlayersStatusResponse(roomResponse.getId())
+        playerStatusFacade.getAllPlayersStatusesResponse(roomResponse.getId())
         then: "user successfully deleted all player statuses"
         thrown ResourceNotFoundException
     }

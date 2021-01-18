@@ -95,7 +95,7 @@ public class RoomFacade {
         RoomResponse roomResponse = getRoom(roomId);
         isAuthorized(userId, roomResponse.getCreatorId(), "delete this room");
         if (roomResponse.getUsersInRoom() > 0L) {
-            List<PlayerStatus> allPlayersStatuses = playerStatusRepository.findAllPlayerStatusByRoomId(roomId);
+            List<PlayerStatus> allPlayersStatuses = playerStatusRepository.findAllPlayerStatusesByRoomId(roomId);
             playerStatusRepository.deleteAll(allPlayersStatuses);
         }
         roomRepository.deleteById(roomId);

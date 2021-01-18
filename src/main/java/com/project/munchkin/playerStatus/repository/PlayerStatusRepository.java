@@ -19,8 +19,11 @@ public interface PlayerStatusRepository extends JpaRepository<PlayerStatus, Long
     boolean playerIsInAnyRoom(User user);
 
     @Query("SELECT u FROM PlayerStatus u WHERE u.roomId = ?1" )
-    List<PlayerStatus> findAllPlayerStatusByRoomId(Long roomId);
+    List<PlayerStatus> findAllPlayerStatusesByRoomId(Long roomId);
 
     @Query("SELECT u FROM PlayerStatus u WHERE u.roomId = ?1 ORDER BY u.playerLevel desc" )
     List<PlayerStatus> findAllSortedPlayerStatusByRoomId(Long roomId);
+
+    @Query("SELECT u FROM PlayerStatus u WHERE u.roomId = ?1 and u.playerInRoom = 1" )
+    List<PlayerStatus> findAllPlayerStatusesInRoom(Long roomId);
 }
