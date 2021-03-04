@@ -6,10 +6,12 @@ import com.project.munchkin.user.dto.*;
 import com.project.munchkin.user.dto.authRequests.LoginRequest;
 import com.project.munchkin.user.dto.authRequests.SignUpRequest;
 import com.project.munchkin.user.exception.EmailAlreadyExistsException;
+import com.project.munchkin.user.exception.InGameNameAlreadyExistsException;
 import com.project.munchkin.user.exception.UsernameAlreadyExistsException;
 import com.project.munchkin.user.model.User;
 import com.project.munchkin.user.repository.UserRepository;
 import lombok.Builder;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -56,12 +58,17 @@ public class UserFacade {
         return tokenProvider.generateToken(authentication);
     }
 
-    public UserResponse registerUser(SignUpRequest signUpRequest) throws UsernameAlreadyExistsException, EmailAlreadyExistsException {
+    public UserResponse registerUser(SignUpRequest signUpRequest) {
         if (userRepository.existsByUsername(signUpRequest.getUsername())) {
             throw new UsernameAlreadyExistsException("Username " + signUpRequest.getUsername() + " is already taken!", HttpStatus.BAD_REQUEST);
         }
+
+        if (userRepository.existsByInGameName(signUpRequest.getInGameName())) {
+            throw new InGameNameAlreadyExistsException("In game name " + signUpRequest.getInGameName() + "is already in use!", HttpStatus.BAD_REQUEST);
+        }
+
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-            throw new EmailAlreadyExistsException("Email " + signUpRequest.getUsername() + " already in use!", HttpStatus.BAD_REQUEST);
+            throw new EmailAlreadyExistsException("Email " + signUpRequest.getEmail() + "is already in use!", HttpStatus.BAD_REQUEST);
         }
 
         User user = User.builder()
@@ -73,8 +80,8 @@ public class UserFacade {
 
         user.setUserPassword(passwordEncoder.encode(signUpRequest.getUserPassword()));
 
-        User result = userRepository.save(user);
-        return result.response();
+        User createdUser = userRepository.save(user);
+        return createdUser.response();
     }
 
     public UserResponse getUserResponse(Long userId) {
@@ -83,6 +90,14 @@ public class UserFacade {
 
     public UserResponse editUser(UserEditRequest userEditRequest, Long userId) {
         UserDto userDto = getUser(userId).dto();
+
+        if(!userDto.getUsername().equals(userEditRequest.getUsername()) && userRepository.existsByUsername(userEditRequest.getUsername())){
+            throw new UsernameAlreadyExistsException("Username " + userEditRequest.getUsername() + " is already taken!", HttpStatus.BAD_REQUEST);
+        }
+
+        if(!userDto.getInGameName().equals(userEditRequest.getInGameName()) && userRepository.existsByInGameName(userEditRequest.getInGameName())){
+            throw new InGameNameAlreadyExistsException("In game name " + userEditRequest.getInGameName() + " already in use!", HttpStatus.BAD_REQUEST);
+        }
 
         userDto.setUsername(userEditRequest.getUsername());
         userDto.setInGameName(userEditRequest.getInGameName());
@@ -119,30 +134,41 @@ public class UserFacade {
     public void editAvatar(MultipartFile imageFile, Long userId) throws IOException {
         UserDto userDto = getUser(userId).dto();
 
-        if(userDto.getIconUrl() != null){
-            Files.delete(Paths.get(userDto.getIconUrl()));
-        }
-
         Path currentPath = Paths.get(".");
         Path absolutePath = currentPath.toAbsolutePath().normalize();
         String folderPath = absolutePath + "\\src\\main\\resources\\static\\photos\\";
 
-        Path path = Paths.get(folderPath + imageFile.getOriginalFilename());
+        String sha256hex = DigestUtils.sha256Hex(userDto.getInGameName());
+
+        Path path = Paths.get(folderPath + sha256hex + "_avatar");
 
         byte[] bytes = imageFile.getBytes();
         Files.write(path, bytes);
 
-        userDto.setIconUrl(folderPath + imageFile.getOriginalFilename());
+        userDto.setIconPath(path.toString());
         userRepository.save(User.fromDto(userDto));
     }
 
     public byte[] getAvatar(Long userId) throws IOException {
-        String iconUrl = getUser(userId).dto().getIconUrl();
+        String iconUrl = getUser(userId).dto().getIconPath();
         if(iconUrl == null){
             throw new ResourceNotFoundException("IconUrl", "UserId", userId, HttpStatus.NOT_FOUND);
         }
         InputStream iconStream = new FileInputStream(iconUrl);
-        return IOUtils.toByteArray(iconStream);
+        byte[] bytes = IOUtils.toByteArray(iconStream);
+        iconStream.close();
+        return bytes;
+    }
+
+    public void deleteAvatar(Long userId) throws IOException {
+        UserDto userDto = getUser(userId).dto();
+        if(userDto.getIconPath() != null){
+            Files.delete(Paths.get(userDto.getIconPath()));
+            userDto.setIconPath(null);
+            userRepository.save(User.fromDto(userDto));
+            return;
+        }
+        throw new ResourceNotFoundException("Avatar", "UserId", userId, HttpStatus.BAD_REQUEST);
     }
 
     private void changeUserPassword(String newPassword, Long userId) {

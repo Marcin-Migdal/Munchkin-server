@@ -17,6 +17,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.validation.Valid;
 import java.net.URI;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/rooms")
@@ -48,17 +49,27 @@ public class RoomController {
         }
     }
 
-    @GetMapping("/getAll/{page}/{pageSize}")
-    public ResponseEntity<?> getPageableRooms(@PathVariable int page, @PathVariable int pageSize) {
-        Page<RoomResponse> pageableRooms = roomFacade.getPageableRooms(page, pageSize);
+    @GetMapping("/getAll/{page}/{pageSize}/{sortBy}")
+    public ResponseEntity<?> getPageableRooms(@PathVariable int page, @PathVariable int pageSize, @PathVariable String sortBy, @CurrentUser UserPrincipal currentUser) {
+        Page<RoomResponse> pageableRooms = roomFacade.getPageableRooms(page, pageSize, sortBy, currentUser.getId());
         return ResponseEntity.ok().body(new ApiResponse <>(true, pageSize + " rooms in page: " + page + " was returned successfully", pageableRooms));
     }
 
-    @GetMapping("/search/{searchValue}/{page}/{pageSize}")
-    public ResponseEntity<?> searchPageableRoom(@PathVariable String searchValue, @PathVariable int page, @PathVariable int pageSize) {
+    @GetMapping("/searchPageable/{searchValue}/{page}/{pageSize}/{sortBy}")
+    public ResponseEntity<?> searchPageableRooms(@PathVariable String searchValue, @PathVariable int page, @PathVariable int pageSize, @PathVariable String sortBy, @CurrentUser UserPrincipal currentUser) {
         try{
-            Page<RoomResponse> pageableRooms = roomFacade.getPageableSearchedRoom(searchValue, page, pageSize);
+            Page<RoomResponse> pageableRooms = roomFacade.getPageableSearchedRooms(searchValue, page, pageSize, sortBy, currentUser.getId());
             return ResponseEntity.ok().body(new ApiResponse <>(true, pageSize + " rooms in page: " + page + " was found successfully", pageableRooms));
+        }catch (ResourceNotFoundException e){
+            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
+        }
+    }
+
+    @GetMapping("/search/{searchValue}")
+    public ResponseEntity<?> searchRooms(@PathVariable String searchValue) {
+        try{
+            List<RoomResponse> roomResponseList = roomFacade.getSearchedRooms(searchValue);
+            return ResponseEntity.ok().body(new ApiResponse <>(true, "Rooms by search value: " + searchValue + " was found successfully", roomResponseList));
         }catch (ResourceNotFoundException e){
             return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
         }

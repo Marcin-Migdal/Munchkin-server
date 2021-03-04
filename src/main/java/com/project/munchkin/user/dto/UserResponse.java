@@ -13,4 +13,5 @@ public class UserResponse {
     String username;
     String inGameName;
     String gender;
+    boolean hasAvatar;
 }

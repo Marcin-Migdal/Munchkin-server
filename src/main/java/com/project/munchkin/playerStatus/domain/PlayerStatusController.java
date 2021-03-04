@@ -6,9 +6,8 @@ import com.project.munchkin.base.security.UserPrincipal;
 import com.project.munchkin.playerStatus.dto.EditRequest.BonusLevelEditRequest;
 import com.project.munchkin.playerStatus.dto.EditRequest.ClassRaceEditRequest;
 import com.project.munchkin.playerStatus.dto.JoinRequest;
-import com.project.munchkin.playerStatus.dto.PlayerClassDto;
-import com.project.munchkin.playerStatus.dto.PlayerRaceDto;
 import com.project.munchkin.playerStatus.dto.PlayerStatus.PlayerStatusResponse;
+import com.project.munchkin.playerStatus.dto.RaceAndClassResponse;
 import com.project.munchkin.playerStatus.exception.RoomIsFullException;
 import com.project.munchkin.playerStatus.exception.UserAlreadyInRoomException;
 import com.project.munchkin.playerStatus.exception.WrongValueException;
@@ -28,41 +27,11 @@ public class PlayerStatusController {
     @Autowired
     PlayerStatusFacade playerStatusFacade;
 
-    @GetMapping("/race/byId/{raceId}")
-    public ResponseEntity<?> getRace(@PathVariable Long raceId){
+    @GetMapping("/getAllRacesAndClasses")
+    public ResponseEntity<?> getAllRacesAndClasses(){
         try{
-            PlayerRaceDto playerRaceDto = playerStatusFacade.getRace(raceId);
-            return ResponseEntity.ok().body(new ApiResponse<>(true, "Race returned successfully", playerRaceDto));
-        }catch (ResourceNotFoundException e){
-            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
-        }
-    }
-
-    @GetMapping("/race/getAll")
-    public ResponseEntity<?> getAllRaces(){
-        try{
-            List<PlayerRaceDto> allPlayerRaces = playerStatusFacade.getAllRaces();
-            return ResponseEntity.ok().body(new ApiResponse<>(true, "All races returned successfully", allPlayerRaces));
-        }catch (ResourceNotFoundException e){
-            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
-        }
-    }
-
-    @GetMapping("/class/byId/{classId}")
-    public ResponseEntity<?> getClass(@PathVariable Long classId){
-        try{
-            PlayerClassDto classDto = playerStatusFacade.getClass(classId);
-            return ResponseEntity.ok().body(new ApiResponse<>(true, "Class returned successfully", classDto));
-        }catch (ResourceNotFoundException e){
-            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
-        }
-    }
-
-    @GetMapping("/class/getAll")
-    public ResponseEntity<?> getAllClasses(){
-        try{
-            List<PlayerClassDto> allClasses = playerStatusFacade.getAllClasses();
-            return ResponseEntity.ok().body(new ApiResponse<>(true, "All classes returned successfully", allClasses));
+            RaceAndClassResponse allPlayerRacesAndClasses = playerStatusFacade.getAllRacesAndClasses();
+            return ResponseEntity.ok().body(new ApiResponse<>(true, "All races and classes returned successfully", allPlayerRacesAndClasses));
         }catch (ResourceNotFoundException e){
             return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
         }
@@ -132,21 +101,21 @@ public class PlayerStatusController {
         }
     }
 
-    @PatchMapping("/setLevel")
-    public ResponseEntity<?> setPlayerLevel (@RequestBody BonusLevelEditRequest bonusLevelEditRequest){
+    @PatchMapping("/exitRoomOnLogIn")
+    public ResponseEntity<?> exitRoomOnLogIn (@CurrentUser UserPrincipal currentUser){
         try{
-            playerStatusFacade.setPlayerLevel(bonusLevelEditRequest.getPlayerStatusId(), bonusLevelEditRequest.getNewValue());
-            return ResponseEntity.ok().body(new ApiResponse<>(true,"Player level is set successfully"));
-        }catch (ResourceNotFoundException | NotAuthorizedException | WrongValueException e){
+            playerStatusFacade.exitRoomOnLogIn(currentUser.getId());
+            return ResponseEntity.ok().body(new ApiResponse<>(true,"Player leaves the room successfully"));
+        }catch (ResourceNotFoundException | NotAuthorizedException e){
             return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
         }
     }
 
-    @PatchMapping("/setBonus")
-    public ResponseEntity<?> setPlayerBonus (@RequestBody BonusLevelEditRequest bonusLevelEditRequest){
+    @PutMapping("/setPlayerStatus")
+    public ResponseEntity<?> setPlayerStatus (@RequestBody BonusLevelEditRequest bonusLevelEditRequest){
         try{
-            playerStatusFacade.setPlayerBonus(bonusLevelEditRequest.getPlayerStatusId(), bonusLevelEditRequest.getNewValue());
-            return ResponseEntity.ok().body(new ApiResponse<>(true,"Player bonus is set successfully"));
+            playerStatusFacade.setPlayerStatus(bonusLevelEditRequest);
+            return ResponseEntity.ok().body(new ApiResponse<>(true,"Player level is set successfully"));
         }catch (ResourceNotFoundException | NotAuthorizedException | WrongValueException e){
             return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
         }
@@ -162,7 +131,7 @@ public class PlayerStatusController {
         }
     }
 
-    @PatchMapping("/changeRace")
+    @PatchMapping("/race/changeRace")
     public ResponseEntity<?> changeFirstRace (@RequestBody ClassRaceEditRequest classRaceEditRequest){
         try{
             playerStatusFacade.setFirstRace(classRaceEditRequest.getPlayerStatusId(), classRaceEditRequest.getNewId());
@@ -172,7 +141,7 @@ public class PlayerStatusController {
         }
     }
 
-    @PatchMapping("/changeSecondRace")
+    @PatchMapping("/race/changeSecondRace")
     public ResponseEntity<?> changeSecondRace (@RequestBody ClassRaceEditRequest classRaceEditRequest){
         try{
             playerStatusFacade.setSecondRace(classRaceEditRequest.getPlayerStatusId(), classRaceEditRequest.getNewId());
@@ -182,17 +151,7 @@ public class PlayerStatusController {
         }
     }
 
-    @PatchMapping("/setTwoRaces/{playerStatusId}")
-    public ResponseEntity<?> setTwoRaces(@PathVariable Long playerStatusId){
-        try{
-            boolean isTwoRaces = playerStatusFacade.toggleTwoRaces(playerStatusId);
-            return ResponseEntity.ok().body(new ApiResponse<>(true,"Player can have two races: " + isTwoRaces));
-        }catch (ResourceNotFoundException | NotAuthorizedException e){
-            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
-        }
-    }
-
-    @PatchMapping("/changeClass")
+    @PatchMapping("/class/changeClass")
     public ResponseEntity changeFirstClass(@RequestBody ClassRaceEditRequest classRaceEditRequest){
         try{
             playerStatusFacade.setFirstClass(classRaceEditRequest.getPlayerStatusId(), classRaceEditRequest.getNewId());
@@ -202,21 +161,11 @@ public class PlayerStatusController {
         }
     }
 
-    @PatchMapping("/changeSecondClass")
+    @PatchMapping("/class/changeSecondClass")
     public ResponseEntity<?> changeSecondClass (@RequestBody ClassRaceEditRequest classRaceEditRequest){
         try{
             playerStatusFacade.setSecondClass(classRaceEditRequest.getPlayerStatusId(), classRaceEditRequest.getNewId());
             return ResponseEntity.ok().body(new ApiResponse<>(true,"Second player class was changed successfully"));
-        }catch (ResourceNotFoundException | NotAuthorizedException e){
-            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
-        }
-    }
-
-    @PatchMapping("/setTwoClasses/{playerStatusId}")
-    public ResponseEntity<?> setTwoClasses(@PathVariable Long playerStatusId){
-        try{
-            boolean isTwoClasses = playerStatusFacade.toggleTwoClasses(playerStatusId);
-            return ResponseEntity.ok().body(new ApiResponse<>(true,"Player can have two classes: " + isTwoClasses));
         }catch (ResourceNotFoundException | NotAuthorizedException e){
             return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
         }

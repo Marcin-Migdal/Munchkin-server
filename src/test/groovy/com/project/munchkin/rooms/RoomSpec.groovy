@@ -39,7 +39,7 @@ class RoomSpec extends Specification {
         munchkinTestUtils.createRoom("Second Testing Room", 5L, "Secret123", userResponse.getId())
         munchkinTestUtils.createRoom("SecondSecond Testing Room", 5L, "Secret123", userResponse.getId())
         when: "user is trying to get rooms"
-        def pageableRooms = roomFacade.getPageableRooms(0, 2)
+        def pageableRooms = roomFacade.getPageableRooms(0, 2, "id", userResponse.getId())
         then: "user got pageable rooms"
         println pageableRooms.getContent().get(0).getRoomName()
         !pageableRooms.isEmpty()
@@ -77,14 +77,25 @@ class RoomSpec extends Specification {
         !roomRepository.existsById(roomResponse.getId())
     }
 
-    def "user is able to search rooms "() {
+    def "user is able to search pageable rooms"() {
         given: "there is user and a room"
         def userResponse = munchkinTestUtils.registerUser("Frank", "Frank1234",
                 "Frank1234@gmail.com", "Frank1234", "male")
         munchkinTestUtils.createRoom("Sixth Testing Room", 3L, "WordButItsASecretWord", userResponse.getId())
         when: "user search for room"
-        def pageableRoomResponse = roomFacade.getPageableSearchedRoom("S", 0, 1)
-        then: "user gets room"
+        def pageableRoomResponse = roomFacade.getPageableSearchedRooms("S", 0, 1, "id", userResponse.getId())
+        then: "user gets pageable room"
         !pageableRoomResponse.isEmpty()
+    }
+
+    def "user is able to search rooms"() {
+        given: "there is user and a room"
+        def userResponse = munchkinTestUtils.registerUser("Frank", "Frank1234",
+                "Frank1234@gmail.com", "Frank1234", "male")
+        munchkinTestUtils.createRoom("Sixth Testing Room", 3L, "WordButItsASecretWord", userResponse.getId())
+        when: "user search for room"
+        def roomResponse = roomFacade.getSearchedRooms("S")
+        then: "user gets pageable room"
+        !roomResponse.isEmpty()
     }
 }

@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 public class PlayerStatusInMemoryRepository implements PlayerStatusRepository {
 
     private final Map<Long, PlayerStatus> playerStatuses = new HashMap<>();
+
     private Long nextId = 1L;
 
     private Long getNextId() {
@@ -41,7 +42,7 @@ public class PlayerStatusInMemoryRepository implements PlayerStatusRepository {
     }
 
     @Override
-    public List<PlayerStatus> findAllPlayerStatusByRoomId(Long roomId) {
+    public List<PlayerStatus> findAllPlayerStatusesByRoomId(Long roomId) {
         List<PlayerStatus> playerStatusesInRoom = this.playerStatuses.values().stream()
                 .filter(playerStatus -> playerStatus.getRoomId() == roomId)
                 .collect(Collectors.toList());
@@ -54,6 +55,18 @@ public class PlayerStatusInMemoryRepository implements PlayerStatusRepository {
                 .filter(playerStatus -> playerStatus.getRoomId() == roomId)
                 .sorted(Comparator.comparingLong(PlayerStatus::getPlayerLevel))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<PlayerStatus> findAllPlayerStatusesInRoom(Long roomId) {
+        return this.playerStatuses.values().stream()
+                .filter(playerStatus -> playerStatus.getRoomId().equals(roomId) && playerStatus.isPlayerInRoom())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void allPLayersLeaveRoom(Long roomId) {
+
     }
 
     @Override
@@ -97,9 +110,7 @@ public class PlayerStatusInMemoryRepository implements PlayerStatusRepository {
     }
 
     @Override
-    public void deleteAll() {
-
-    }
+    public void deleteAll() {}
 
     @Override
     public <S extends PlayerStatus> S save(S s) {

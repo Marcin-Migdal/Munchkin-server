@@ -3,6 +3,7 @@ package groovy.com.project.munchkin.utils
 import com.project.munchkin.base.security.JwtTokenProvider
 import com.project.munchkin.playerStatus.domain.PlayerStatusFacade
 import com.project.munchkin.playerStatus.domain.PlayerStatusFacadeCreator
+import com.project.munchkin.playerStatus.dto.EditRequest.BonusLevelEditRequest
 import com.project.munchkin.playerStatus.model.PlayerClass
 import com.project.munchkin.playerStatus.model.PlayerRace
 import com.project.munchkin.playerStatus.repository.PlayerClassRepository
@@ -82,6 +83,14 @@ class MunchkinTestUtils {
         return roomFacade.addRoom(roomRequest, userId)
     }
 
+    BonusLevelEditRequest createBonusLevelEditRequest(Long playerStatusId,Long level) {
+        return BonusLevelEditRequest.builder()
+                .playerStatusId(playerStatusId)
+                .levelValue(level)
+                .bonusValue(5)
+                .build()
+    }
+
     void createRacesAndClasses(){
         def playerRaceHuman = PlayerRace.builder()
                 .id(0L)
@@ -97,23 +106,40 @@ class MunchkinTestUtils {
                 .raceDescription("Have long ears")
                 .build()
 
-        def defaultClass = PlayerClass.builder()
+        def playerRaceDwarf = PlayerRace.builder()
+                .id(2L)
+                .raceName("Dwarf")
+                .raceIcon("none")
+                .raceDescription("Is short")
+                .build()
+
+        def playerClassDefault = PlayerClass.builder()
                 .id(0L)
                 .className("Default")
                 .classIcon("none")
                 .classDescription("Just normal being")
                 .build()
 
-        def WizardClass = PlayerClass.builder()
+        def playerClassWizard = PlayerClass.builder()
                 .id(1L)
                 .className("Wizard")
                 .classIcon("none")
                 .classDescription("Can use magic")
                 .build()
 
+        def playerClassBard = PlayerClass.builder()
+                .id(2L)
+                .className("Bard")
+                .classIcon("none")
+                .classDescription("Can sing")
+                .build()
+
         playerRaceRepository.save(playerRaceHuman)
         playerRaceRepository.save(playerRaceElf)
-        playerClassRepository.save(defaultClass)
-        playerClassRepository.save(WizardClass)
+        playerRaceRepository.save(playerRaceDwarf)
+
+        playerClassRepository.save(playerClassDefault)
+        playerClassRepository.save(playerClassWizard)
+        playerClassRepository.save(playerClassBard)
     }
 }

@@ -17,6 +17,9 @@ import javax.validation.constraints.Size;
                 "username"
         }),
         @UniqueConstraint(columnNames = {
+                "inGameName"
+        }),
+        @UniqueConstraint(columnNames = {
                 "email"
         })
 })
@@ -48,18 +51,18 @@ public class User extends DateAudit {
     @Size(max = 100)
     String userPassword;
 
-    String iconUrl;
+    String iconPath;
 
     @NotBlank
     String gender;
 
-    public User(Long id, String inGameName, String username, String email, String userPassword, String iconUrl, String gender) {
+    public User(Long id, String inGameName, String username, String email, String userPassword, String iconPath, String gender) {
         this.id = id;
         this.inGameName = inGameName;
         this.username = username;
         this.email = email;
         this.userPassword = userPassword;
-        this.iconUrl = iconUrl;
+        this.iconPath = iconPath;
         this.gender = gender;
     }
 
@@ -70,7 +73,7 @@ public class User extends DateAudit {
                 .username(userDto.getUsername())
                 .email(userDto.getEmail())
                 .userPassword(userDto.getUserPassword())
-                .iconUrl(userDto.getIconUrl())
+                .iconPath(userDto.getIconPath())
                 .gender(userDto.getGender())
                 .build();
     }
@@ -82,7 +85,7 @@ public class User extends DateAudit {
                 .username(username)
                 .email(email)
                 .userPassword(userPassword)
-                .iconUrl(iconUrl)
+                .iconPath(iconPath)
                 .gender(gender)
                 .build();
     }
@@ -93,6 +96,7 @@ public class User extends DateAudit {
                 .inGameName(inGameName)
                 .username(username)
                 .gender(gender)
+                .hasAvatar(iconPath != null)
                 .build();
     }
 }

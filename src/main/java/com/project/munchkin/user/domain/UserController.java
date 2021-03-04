@@ -8,6 +8,7 @@ import com.project.munchkin.user.dto.*;
 import com.project.munchkin.user.dto.authRequests.LoginRequest;
 import com.project.munchkin.user.dto.authRequests.SignUpRequest;
 import com.project.munchkin.user.exception.EmailAlreadyExistsException;
+import com.project.munchkin.user.exception.InGameNameAlreadyExistsException;
 import com.project.munchkin.user.exception.UsernameAlreadyExistsException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.CacheControl;
@@ -70,6 +71,8 @@ public class UserController {
             return ResponseEntity.ok().body(new ApiResponse <UserResponse>(true, "User was edited successfully", userResponse));
         }catch ( ResourceNotFoundException e){
             return new ResponseEntity<>(new ApiResponse<>(false, e.getMessage()), e.getHttpStatus());
+        }catch ( UsernameAlreadyExistsException | InGameNameAlreadyExistsException e){
+            return new ResponseEntity<>(new ApiResponse<>(false, e.getMessage()), HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -101,6 +104,8 @@ public class UserController {
         }catch (IOException e) {
             e.printStackTrace();
             return new ResponseEntity<>(new ApiResponse<>(false, "Error occurred while trying to edit avatar"), HttpStatus.BAD_REQUEST);
+        } catch (ResourceNotFoundException e) {
+            return new ResponseEntity<>(new ApiResponse<>(false, e.getMessage()), e.getHttpStatus());
         }
     }
 
@@ -119,9 +124,15 @@ public class UserController {
         }
     }
 
-    @GetMapping("/getCurrentUserAvatar")
-    public ResponseEntity<?> getCurrentUserAvatar(@CurrentUser UserPrincipal currentUser) {
-        return getAvatar(currentUser.getId());
+    @DeleteMapping("/deleteAvatar")
+    public ResponseEntity<?> deleteAvatar( @CurrentUser UserPrincipal currentUser) {
+        try {
+            userFacade.deleteAvatar(currentUser.getId());
+            return ResponseEntity.ok().body(new ApiResponse <>(true, "Avatar was deleted successfully"));
+        } catch (IOException e) {
+            return new ResponseEntity<>(new ApiResponse<>(false, "Unknown error occurred while deleting avatar"), HttpStatus.BAD_REQUEST);
+        }  catch (ResourceNotFoundException e) {
+            return new ResponseEntity<>(new ApiResponse<>(false, e.getMessage()), e.getHttpStatus());
+        }
     }
-    
 }

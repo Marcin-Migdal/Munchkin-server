@@ -29,14 +29,15 @@ public class PlayerRace {
     String raceIcon;
 
     @NotNull
+    @Lob
     String raceDescription;
 
     public  PlayerRaceDto dto (){
         return PlayerRaceDto.builder()
                 .id(id)
-                .raceName(raceName)
-                .raceIcon(raceIcon)
-                .raceDescription(raceDescription)
+                .name(raceName)
+                .icon(raceIcon)
+                .description(raceDescription)
                 .build();
     }
 }
