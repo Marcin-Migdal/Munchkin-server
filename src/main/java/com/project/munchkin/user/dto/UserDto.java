@@ -16,6 +16,6 @@ public class UserDto {
     String username;
     String email;
     String userPassword;
-    String iconUrl;
+    String iconPath;
     String gender;
 }

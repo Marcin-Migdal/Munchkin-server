@@ -28,14 +28,15 @@ public class PlayerClass {
     String classIcon;
 
     @NotNull
+    @Lob
     String classDescription;
 
     public PlayerClassDto dto (){
         return PlayerClassDto.builder()
                 .id(id)
-                .className(className)
-                .classIcon(classIcon)
-                .classDescription(classDescription)
+                .name(className)
+                .icon(classIcon)
+                .description(classDescription)
                 .build();
     }
 }

@@ -16,8 +16,5 @@ public class UserEditRequest {
     private String inGameName;
 
     @Getter
-    private String iconUrl;
-
-    @Getter
     private String gender;
 }

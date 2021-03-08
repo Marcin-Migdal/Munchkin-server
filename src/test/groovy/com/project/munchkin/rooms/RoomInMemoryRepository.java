@@ -3,6 +3,7 @@ package groovy.com.project.munchkin.rooms;
 import com.project.munchkin.room.dto.RoomDto;
 import com.project.munchkin.room.model.Room;
 import com.project.munchkin.room.repository.RoomRepository;
+import com.project.munchkin.user.model.User;
 import org.springframework.data.domain.*;
 
 import java.util.*;
@@ -147,27 +148,61 @@ public class RoomInMemoryRepository implements RoomRepository {
     }
 
     @Override
-    public Page<Room> searchPageableRoom(String searchValue, Pageable pageable) {
+    public Page<Room> findSearchedPageableRooms(String searchValue, Pageable page) {
         List<Room> roomList = new ArrayList<>(rooms.values());
         roomList.removeIf(room -> !room.getRoomName().contains(searchValue));
-        return new PageImpl<>(roomList, pageable, roomList.size());
+        return new PageImpl<>(roomList, page, roomList.size());
+    }
+
+    @Override
+    public List<Room> searchRooms(String searchValue, Pageable page) {
+        List<Room> roomList = new ArrayList<>(rooms.values());
+        roomList.removeIf(room -> !room.getRoomName().contains(searchValue) || room.isComplete());
+
+        return roomList;
+    }
+
+    @Override
+    public Page<Room> findUserRooms(User user, Pageable page) {
+        List<Room> roomList = rooms.values().stream()
+                .filter(room -> room.getUser().equals(user))
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(roomList, page, roomList.size());
+    }
+
+    @Override
+    public Page<Room> findSearchedPageableUserRooms(String searchValue, User user, Pageable page) {
+        List<Room> roomList = rooms.values().stream()
+                .filter(room -> room.getUser().equals(user) && room.getRoomName().contains(searchValue))
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(roomList, page, roomList.size());
+    }
+
+    @Override
+    public Optional<Long> findRoomIdWithPlayerIn(User user) {
+        Long roomId = rooms.values().stream()
+                .filter(room -> room.getUser().equals(user))
+                .findFirst()
+                .get()
+                .getId();
+
+        return Optional.of(roomId);
     }
 
     @Override
     public boolean existsByRoomName(String roomName) {
-        List<Room> roomList = rooms.values().stream()
-                .filter(room -> room.getRoomName().equals(roomName))
-                .collect(Collectors.toList());
-
-        return !roomList.isEmpty();
+        return rooms.values().stream()
+                .anyMatch(room -> room.getRoomName().equals(roomName));
     }
 
     @Override
-    public Page<Room> findAllInComplete(Pageable pageable) {
+    public Page<Room> findAllInComplete(Pageable page) {
         List<Room> roomList = rooms.values().stream()
                 .filter(room -> !room.isComplete())
                 .collect(Collectors.toList());
-        return new PageImpl<>(roomList, pageable, roomList.size());
+        return new PageImpl<>(roomList, page, roomList.size());
     }
 
     private Long getNextId() {

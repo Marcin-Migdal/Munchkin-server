@@ -49,7 +49,6 @@ class UserSpec extends Specification {
         def userEditRequest = UserEditRequest.builder()
                 .username("femaleJohn1234")
                 .inGameName("femaleJohn")
-                .iconUrl("defaultAvatar.pl")
                 .gender("female")
                 .build()
 
@@ -59,7 +58,6 @@ class UserSpec extends Specification {
 
         editedUser.getUsername() == userEditRequest.getUsername()&&
                 editedUser.getInGameName() == userEditRequest.getInGameName()&&
-                editedUser.getIconUrl() == userEditRequest.getIconUrl()&&
                 editedUser.getGender() == userEditRequest.getGender()
     }
 

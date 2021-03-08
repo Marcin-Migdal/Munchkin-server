@@ -12,5 +12,6 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class BonusLevelEditRequest {
     Long playerStatusId;
-    Long newValue;
+    Long levelValue;
+    Long bonusValue;
 }

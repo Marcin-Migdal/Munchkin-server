@@ -3,16 +3,14 @@ package com.project.munchkin.playerStatus.dto;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.experimental.FieldDefaults;
+
+import java.util.List;
 
 @Builder
 @Getter
-@Setter
-@FieldDefaults(level = AccessLevel.PUBLIC)
-public class PlayerClassDto {
-    Long id;
-    String name;
-    String icon;
-    String description;
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class RaceAndClassResponse {
+    List<PlayerRaceDto> playerRaces;
+    List<PlayerClassDto> playerClasses;
 }

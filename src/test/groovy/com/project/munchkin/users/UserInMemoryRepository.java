@@ -22,12 +22,20 @@ public class UserInMemoryRepository implements UserRepository {
 
     @Override
     public Boolean existsByUsername(String username) {
-        return users.values().stream().anyMatch(user -> user.getUsername().equals(username));
+        return users.values().stream()
+                .anyMatch(user -> user.getUsername().equals(username));
+    }
+
+    @Override
+    public Boolean existsByInGameName(String inGameName) {
+        return users.values().stream()
+                .anyMatch(user -> user.getInGameName().equals(inGameName));
     }
 
     @Override
     public Boolean existsByEmail(String email) {
-        return users.values().stream().anyMatch(user -> user.getEmail().equals(email));
+        return users.values().stream()
+                .anyMatch(user -> user.getEmail().equals(email));
     }
 
     @Override

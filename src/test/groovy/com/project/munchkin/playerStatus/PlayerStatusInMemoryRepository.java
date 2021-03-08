@@ -2,6 +2,7 @@ package groovy.com.project.munchkin.playerStatus;
 
 import com.project.munchkin.playerStatus.model.PlayerStatus;
 import com.project.munchkin.playerStatus.repository.PlayerStatusRepository;
+import com.project.munchkin.user.model.User;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,6 +14,7 @@ import java.util.stream.Collectors;
 public class PlayerStatusInMemoryRepository implements PlayerStatusRepository {
 
     private final Map<Long, PlayerStatus> playerStatuses = new HashMap<>();
+
     private Long nextId = 1L;
 
     private Long getNextId() {
@@ -20,18 +22,18 @@ public class PlayerStatusInMemoryRepository implements PlayerStatusRepository {
     }
 
     @Override
-    public Optional<PlayerStatus> findByRoomIdAndUserId(Long roomId, Long userId) {
+    public Optional<PlayerStatus> findByRoomIdAndUserId(Long roomId, User user) {
         Optional<PlayerStatus> playerStatus = playerStatuses.values().stream()
-                .filter((item) -> item.getRoomId() == roomId && item.getUserId() == userId)
+                .filter((item) -> item.getRoomId() == roomId && item.getUser().getId() == user.getId())
                 .findFirst();
 
         return playerStatus;
     }
 
     @Override
-    public boolean playerIsInAnyRoom(Long userId) {
+    public boolean playerIsInAnyRoom(User user) {
         List<PlayerStatus> oneUserPlayerStatuses = playerStatuses.values().stream()
-                .filter((item) -> item.getUserId() == userId)
+                .filter((item) -> item.getUser().getId() == user.getId())
                 .collect(Collectors.toList());
         if(!oneUserPlayerStatuses.isEmpty()){
             return true;
@@ -40,7 +42,7 @@ public class PlayerStatusInMemoryRepository implements PlayerStatusRepository {
     }
 
     @Override
-    public List<PlayerStatus> findAllPlayerStatusByRoomId(Long roomId) {
+    public List<PlayerStatus> findAllPlayerStatusesByRoomId(Long roomId) {
         List<PlayerStatus> playerStatusesInRoom = this.playerStatuses.values().stream()
                 .filter(playerStatus -> playerStatus.getRoomId() == roomId)
                 .collect(Collectors.toList());
@@ -53,6 +55,18 @@ public class PlayerStatusInMemoryRepository implements PlayerStatusRepository {
                 .filter(playerStatus -> playerStatus.getRoomId() == roomId)
                 .sorted(Comparator.comparingLong(PlayerStatus::getPlayerLevel))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<PlayerStatus> findAllPlayerStatusesInRoom(Long roomId) {
+        return this.playerStatuses.values().stream()
+                .filter(playerStatus -> playerStatus.getRoomId().equals(roomId) && playerStatus.isPlayerInRoom())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void allPLayersLeaveRoom(Long roomId) {
+
     }
 
     @Override
@@ -96,9 +110,7 @@ public class PlayerStatusInMemoryRepository implements PlayerStatusRepository {
     }
 
     @Override
-    public void deleteAll() {
-
-    }
+    public void deleteAll() {}
 
     @Override
     public <S extends PlayerStatus> S save(S s) {

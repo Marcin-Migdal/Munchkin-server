@@ -25,7 +25,7 @@ class AcceptanceSpec extends Specification {
     @Autowired
     ObjectMapper objectMapper
 
-    def ""() {
+    def "Acceptance tests"() {
         when: "User should be able to register"
             SignUpRequest signUpRequest = SignUpRequest.builder()
                     .inGameName("Morti")
@@ -92,7 +92,7 @@ class AcceptanceSpec extends Specification {
 
         when: "Morti should be able to get Rooms"
             result = mockMvc.perform(MockMvcRequestBuilders
-                    .get("/api/rooms/getAll/0/1")
+                    .get("/api/rooms/getAll/0/1/id")
                     .contentType(MediaType.APPLICATION_JSON)
                     .header("Authorization", token))
 

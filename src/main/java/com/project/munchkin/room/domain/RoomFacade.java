@@ -22,6 +22,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Builder
@@ -37,10 +38,9 @@ public class RoomFacade {
     PlayerStatusRepository playerStatusRepository;
 
     public RoomResponse addRoom(RoomRequest roomRequest, Long userId) {
-        if (roomRepository.existsByRoomName(roomRequest.getRoomName())) {
-            throw new RoomNameAlreadyExistsException("RoomName " + roomRequest.getRoomName() + " is already taken!", HttpStatus.BAD_REQUEST);
+        if(roomRepository.existsByRoomName(roomRequest.getRoomName())) {
+            throw new RoomNameAlreadyExistsException("Room by name: " + roomRequest.getRoomName() + " already exists", HttpStatus.BAD_REQUEST);
         }
-
         Room room = Room.builder()
                 .roomName(roomRequest.getRoomName())
                 .slots(roomRequest.getSlots())
@@ -60,25 +60,55 @@ public class RoomFacade {
         return room.response();
     }
 
-    public Page<RoomResponse> getPageableRooms(int page, int pageSize) {
-        Page<Room> rooms = roomRepository.findAllInComplete(PageRequest.of(page, pageSize));
-        if(rooms.isEmpty()){
-            throw new ResourceNotFoundException("Rooms", "page", page, HttpStatus.NOT_FOUND);
+    public Page<RoomResponse> getPageableRooms(int page, int pageSize, String sortBy, Long userId) {
+        Page<Room> rooms;
+        
+        if(sortBy.equals("createdByMe")){
+            User user = getUser(userId);
+            rooms = roomRepository.findUserRooms(user, PageRequest.of(page, pageSize));
+            return rooms.map(Room::response);
+        }else{
+            rooms = roomRepository.findAllInComplete(PageRequest.of(page, pageSize, Sort.by(sortBy)));
+        }
+
+        return rooms.map(Room::response);
+    }
+
+    public Page<RoomResponse> getPageableSearchedRooms(String searchValue, int page, int pageSize, String sortBy, Long userId) {
+        Page<Room> rooms;
+
+        if(sortBy.equals("createdByMe")){
+            User user = getUser(userId);
+            rooms = roomRepository.findSearchedPageableUserRooms(searchValue, user, PageRequest.of(page, pageSize));
+            return rooms.map(Room::response);
+        }else{
+            rooms = roomRepository.findSearchedPageableRooms(searchValue, PageRequest.of(page, pageSize, Sort.by(sortBy)));
+        }
+
+        if(rooms.isEmpty()) {
+            throw new ResourceNotFoundException("room", "room name", searchValue, HttpStatus.NOT_FOUND);
         }
         return rooms.map(Room::response);
     }
 
-    public Page<RoomResponse> searchPageableRoom(String searchValue, int page, int pageSize) {
-        Page<Room> roomPage = roomRepository.searchPageableRoom(searchValue, PageRequest.of(page, pageSize, Sort.by("roomName")));
-        if(roomPage.isEmpty()) {
+    public List<RoomResponse> getSearchedRooms(String searchValue) {
+        List<Room> roomList = roomRepository.searchRooms(searchValue, PageRequest.of(0, 10));
+        if(roomList.isEmpty()) {
             throw new ResourceNotFoundException("room", "room name", searchValue, HttpStatus.NOT_FOUND);
         }
-        return roomPage.map(Room::response);
+
+        return roomList.stream()
+                .map(Room::response)
+                .collect(Collectors.toList());
     }
 
     public RoomResponse editRoom(RoomUpdateRequest roomUpdateRequest, Long userId) {
         RoomDto roomDto = roomRepository.findById(roomUpdateRequest.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Room", "roomId", roomUpdateRequest.getId(), HttpStatus.NOT_FOUND)).dto();
+
+        if( !roomDto.getRoomName().equals(roomUpdateRequest.getRoomName()) && roomRepository.existsByRoomName(roomUpdateRequest.getRoomName())) {
+            throw new RoomNameAlreadyExistsException("Room by name: " + roomUpdateRequest.getRoomName() + " already exists", HttpStatus.BAD_REQUEST);
+        }
 
         isAuthorized(userId, roomDto.getUser().getId(), "edit this room");
 
@@ -90,30 +120,18 @@ public class RoomFacade {
             roomDto.setRoomPassword(roomUpdateRequest.getRoomPassword());
         }
 
-        roomRepository.save(Room.fromDto(roomDto));
-        return mapRoomDtoToRoomResponse(roomDto);
+        Room save = roomRepository.save(Room.fromDto(roomDto));
+        return save.response();
     }
 
     public void deleteRoom(Long roomId, Long userId) {
         RoomResponse roomResponse = getRoom(roomId);
         isAuthorized(userId, roomResponse.getCreatorId(), "delete this room");
         if (roomResponse.getUsersInRoom() > 0L) {
-            List<PlayerStatus> allPlayersStatuses = playerStatusRepository.findAllPlayerStatusByRoomId(roomId);
+            List<PlayerStatus> allPlayersStatuses = playerStatusRepository.findAllPlayerStatusesByRoomId(roomId);
             playerStatusRepository.deleteAll(allPlayersStatuses);
         }
         roomRepository.deleteById(roomId);
-    }
-
-    private RoomResponse mapRoomDtoToRoomResponse(RoomDto roomDto) {
-        return RoomResponse.builder()
-                .id(roomDto.getId())
-                .roomName(roomDto.getRoomName())
-                .slots(roomDto.getSlots())
-                .usersInRoom(roomDto.getUsersInRoom())
-                .isComplete(roomDto.isComplete())
-                .creatorId(roomDto.getUser().getId())
-                .roomPassword(roomDto.getRoomPassword())
-                .build();
     }
 
     private User getUser(Long userId){
