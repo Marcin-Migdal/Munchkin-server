@@ -1,6 +1,7 @@
 package com.project.munchkin.playerStatus.model;
 
 import com.project.munchkin.playerStatus.dto.PlayerStatus.PlayerStatusDto;
+import com.project.munchkin.user.model.User;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -25,26 +26,27 @@ public class PlayerStatus {
     @NotNull
     Long roomId;
 
-    @NotNull
-    Long userId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user", nullable = false)
+    User user;
 
     @NotNull
     Long classId;
 
     @NotNull
-    boolean twoClasses;
+    Long secondClassId;
 
     @NotNull
-    Long secondClassId;
+    boolean twoClasses;
 
     @NotNull
     Long raceId;
 
     @NotNull
-    boolean twoRaces;
+    Long secondRaceId;
 
     @NotNull
-    Long secondRaceId;
+    boolean twoRaces;
 
     @NotNull
     Long playerLevel;
@@ -53,7 +55,7 @@ public class PlayerStatus {
     Long playerBonus;
 
     @NotNull
-    Boolean playerInRoom;
+    boolean playerInRoom;
 
     @NotBlank
     String gender;
@@ -62,16 +64,16 @@ public class PlayerStatus {
         return PlayerStatus.builder()
                 .id(playerStatusDto.getId())
                 .roomId(playerStatusDto.getRoomId())
-                .userId(playerStatusDto.getUserId())
+                .user(playerStatusDto.getUser())
+                .secondClassId(playerStatusDto.getSecondClassId())
                 .classId(playerStatusDto.getClassId())
                 .twoClasses(playerStatusDto.isTwoClasses())
-                .secondClassId(playerStatusDto.getSecondClassId())
                 .raceId(playerStatusDto.getRaceId())
-                .twoRaces(playerStatusDto.isTwoRaces())
                 .secondRaceId(playerStatusDto.getSecondRaceId())
+                .twoRaces(playerStatusDto.isTwoRaces())
                 .playerLevel(playerStatusDto.getPlayerLevel())
                 .playerBonus(playerStatusDto.getPlayerBonus())
-                .playerInRoom(playerStatusDto.playerInRoom)
+                .playerInRoom(playerStatusDto.isPlayerInRoom())
                 .gender(playerStatusDto.getGender())
                 .build();
     }
@@ -80,13 +82,13 @@ public class PlayerStatus {
         return PlayerStatusDto.builder()
                 .id(id)
                 .roomId(roomId)
-                .userId(userId)
+                .user(user)
                 .classId(classId)
-                .twoClasses(twoClasses)
                 .secondClassId(secondClassId)
+                .twoClasses(twoClasses)
                 .raceId(raceId)
-                .twoRaces(twoRaces)
                 .secondRaceId(secondRaceId)
+                .twoRaces(twoRaces)
                 .playerLevel(playerLevel)
                 .playerBonus(playerBonus)
                 .playerInRoom(playerInRoom)

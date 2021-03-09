@@ -1,11 +1,14 @@
 package com.project.munchkin.playerStatus.domain;
 
-import com.project.munchkin.base.security.UserPrincipal;
+import com.project.munchkin.playerStatus.dto.EditRequest.BonusLevelEditRequest;
 import com.project.munchkin.playerStatus.dto.PlayerClassDto;
 import com.project.munchkin.playerStatus.dto.PlayerRaceDto;
 import com.project.munchkin.playerStatus.dto.PlayerStatus.PlayerStatusDto;
 import com.project.munchkin.playerStatus.dto.PlayerStatus.PlayerStatusResponse;
-import com.project.munchkin.playerStatus.exception.UserNotInRoomException;
+import com.project.munchkin.playerStatus.dto.RaceAndClassResponse;
+import com.project.munchkin.playerStatus.exception.RoomIsFullException;
+import com.project.munchkin.playerStatus.exception.UserAlreadyInRoomException;
+import com.project.munchkin.playerStatus.exception.WrongValueException;
 import com.project.munchkin.playerStatus.model.PlayerClass;
 import com.project.munchkin.playerStatus.model.PlayerRace;
 import com.project.munchkin.playerStatus.model.PlayerStatus;
@@ -13,16 +16,18 @@ import com.project.munchkin.playerStatus.repository.PlayerClassRepository;
 import com.project.munchkin.playerStatus.repository.PlayerRaceRepository;
 import com.project.munchkin.playerStatus.repository.PlayerStatusRepository;
 import com.project.munchkin.room.dto.RoomDto;
+import com.project.munchkin.room.exception.NotAuthorizedException;
 import com.project.munchkin.room.exception.ResourceNotFoundException;
 import com.project.munchkin.room.model.Room;
 import com.project.munchkin.room.repository.RoomRepository;
-import com.project.munchkin.user.dto.UserDto;
+import com.project.munchkin.user.model.User;
 import com.project.munchkin.user.repository.UserRepository;
-import lombok.Builder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import lombok.Builder;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -46,321 +51,385 @@ public class PlayerStatusFacade {
     @Autowired
     PlayerClassRepository playerClassRepository;
 
+    @Bean
+    public CommandLineRunner insertClassesAndRacesToDatabase(PlayerClassRepository playerClassRepository, PlayerRaceRepository playerRaceRepository) {
+        if(playerClassRepository.existsById(1L) || playerClassRepository.existsById(1L)){
+            return null;
+        }else{
+            return (args) -> {
+                playerRaceRepository.save(createPlayerRace("Człowiek","Nie masz żadnych mocy, jesteś człowiekiem"));
+                playerRaceRepository.save(createPlayerRace("Elf","Zyskujesz 1 poziom za każdego Potwora pokonanego w walkce w której pomogłeś, +1 do ucieczki"));
+                playerRaceRepository.save(createPlayerRace("Krasnolud","Możesz nieść dowolną ilość Dużych Przedmiotów, Możesz mieć 6 kart na ręce"));
+                playerRaceRepository.save(createPlayerRace("Ork","Ork, który jest celem Klątwy, może ją zignorować, tracąc w zamian 1 Poziom, chyba że jest na 1 Poziomie, Jeśli Ork walczy sam i pokona Potwora różnicą siły bojowej więszą niż 10, zyskuje 1 dodatkowy Poziom"));
+                playerRaceRepository.save(createPlayerRace("Niziołek","Raz w trakcie swojej tury możesz sprzedać jeden Przedmiot za podwójną cene (pozostałe przedmiotysą warte tyle , co zwykle), Jeśli nie uda ci się pierwszy rzut na Ucieczkę, możesz odrzucić kartę i spróbować raz jeszcze"));
+                playerRaceRepository.save(createPlayerRace("Gnom","Jeśli walczy sam, możesz zagrać jednego Potwora z ręki jako Iluzję; inne karty mogą wpływać na tego iluzorycznego Potwora normalnie, Dodaj jego siłę bojową do swojej na czas tej jednej walki, potem Potwór znika, Dostajesz +1 za Przedmiot niejednorazowego użytku zaczynający się na G lub N. Potwory Traktują cię jak Niziołka; są zbyt głupie, by dostrzec różnice, Wyjątek: żaden Potwór z \"Nosem\", i \"Nochalem\" w nazwie nie będzie cię gonić. Jeżeli nie możesz ich pokonać to automatycznie im Uciekasz"));
 
-    public PlayerRaceDto getPlayerRace(Long raceId) {
-        return playerRaceRepository.findById(raceId)
-                .orElseThrow(() -> new ResourceNotFoundException("Race", "Race Id", raceId)).dto();
+                playerClassRepository.save(createPlayerClass("Brak","Nie masz żadnej klasy"));
+                playerClassRepository.save(createPlayerClass("Czarodziej","Czar Lot: Możesz odrzucić do 3 kart przy próbie Ucieczki. Każda z nich daje ci +1 do rzutu kostką. Czar Zauroczenie: Odrzuć całą rękę (conajmniej 3 karty), żeby zauroczyć jednego Potwora, zamiast z nim walczyć. Za tak pokonannego Potwora nie zyskujesz Poziomu, ale zdobywasz jego Skarb, Jeśli w walce uczestniczy więcej Potworów, z pozostałymi walczysz normalnie"));
+                playerClassRepository.save(createPlayerClass("Wojownik","Szał Bojowy: Możesz odrzucić do 3 kart w trakcie walki, Każda z nich daje ci bonus +1. Wygrywasz, jeśli walka kończyłaby się remisem"));
+                playerClassRepository.save(createPlayerClass("Kapłan","Wskrzenie: Raz w trakcie tury, Zamiast dobrać kartę odkrytą, możesz wziąć kartę z wierzchu odpowiedniego stosu kart odrzuconych. Gdy to zrobisz, musisz odrzucić jedną kartę z ręki za każdą dobraną tak kartę. Odpędzenie Nieumarłych: Możesz odrzucić do 3 kart w trakcie walki z Nieumarłym. Każda z nich daje ci bonus +1"));
+                playerClassRepository.save(createPlayerClass("Złodziej","Możesz odrzucić kartę, aby wbić nóż w plecy innego gracza (ma -2 na czas trawania walki). Ten sam gracz nie możesz paść twoją ofjarądwukrotnie w jednej walce, ale jeśli walczących jest dwóch, to możesz zdradzić każdego z nich. Kradzież: Możęsz odrzucić kartę z ręki by spróbować ukraść mały przemiot innemu graczowi. Rzuć kostką. Wyniki 5 i 6 to sukces. Udaje ci się ukraść tą rzecz. Porażka (wyniki 1, 2, 3, 4) oznacza, że zostałeś przyłapany. Tracisz 1 poziom."));
+                playerClassRepository.save(createPlayerClass("Łowca","Poskramiacz Potworów: W swojej walce możesz poskromić jednego Potwora zamiast z nim walczyć. Zostaje twoim nowym Rumakiem, Aby go zwerbować musisz odrzucić swojego dotychczasowego Rumaka (jeśli takiego miałeś) i odrzucić liczbe kart równą liczbie Skarbów broninych przez poskromionego Potwora. Ta liczba to także twój nowy bonus z Rumaka. Nie możesz handlować Rumakiem, oddać go ani sprzedać za Poziom. Wsparcie Strzeleckie: Gdy pomagasz komuś w walce, masz dodatkowy bonus +2"));
+                playerClassRepository.save(createPlayerClass("Bard","Oczarowanie: Podczas walki możesz odrzucić kartę i wybrać rywala. Każdy z Was rzuca kością, jeśli wyrzucisz wynik równy lub wyższy niż on, musi ci pomóc i nie może prosić o nagrodę. Jeśli przegrasz, możesz odrzucić kolejną kartę i spróbować Oczarować innego rywala. Możesz próbować dopóki masz karty. Każdego gracza możesz próbować Oczarować tylko raz. Nie możesz zdobyć zwycięskiego poziomu korzystając z tej umiejętności. Bardowe Szczęście: Jeśli wygrasz walkę w swojej turze, sam lub z pomocą, dobierz jeden dodatkowy Skarb. Przejrzyj wszystkie dobrane przed chwilą Skarby i odrzuć jeden, wybrany przez siebie"));
+            };
+        }
     }
 
-    public List<PlayerRaceDto> getAllPlayerRaces() {
-        List<PlayerRaceDto> playerRaceDtos = playerRaceRepository.findAll()
+    private PlayerClass createPlayerClass(String name, String description) {
+        return PlayerClass.builder()
+                .className(name)
+                .classIcon("")
+                .classDescription(description)
+                .build();
+    }
+
+    private PlayerRace createPlayerRace(String name, String description) {
+        return PlayerRace.builder()
+                .raceName(name)
+                .raceIcon("")
+                .raceDescription(description)
+                .build();
+    }
+
+    public RaceAndClassResponse getAllRacesAndClasses() {
+        List<PlayerRaceDto> playerRaceDtoList = playerRaceRepository.findAll()
                 .stream()
                 .map(PlayerRace::dto)
                 .collect(Collectors.toList());
-        return playerRaceDtos;
-    }
+        if(playerRaceDtoList.isEmpty()){
+            throw new ResourceNotFoundException("No race found", HttpStatus.NOT_FOUND);
+        }
 
-    public PlayerClassDto getPlayerClass(Long classId) {
-        return playerClassRepository.findById(classId)
-                .orElseThrow(() -> new ResourceNotFoundException("Class", "Class Id", classId)).dto();
-    }
-
-    public List<PlayerClassDto> getAllPlayerClasses() {
-        List<PlayerClassDto> playerClassDtos = playerClassRepository.findAll()
+        List<PlayerClassDto> playerClassDtoList = playerClassRepository.findAll()
                 .stream()
                 .map(PlayerClass::dto)
                 .collect(Collectors.toList());
-        return playerClassDtos;
-    }
-
-    public PlayerStatusResponse getPlayerStatusByRoomId(Long roomId , UserPrincipal currentUser) {
-        PlayerStatus playerStatusEntity = getPlayerStatusEntityByRoomId(roomId, currentUser.getId());
-        return toPlayerStatusResponse(playerStatusEntity);
-    }
-
-    public PlayerStatusResponse getPlayerStatusById(Long playerStatusId) {
-        PlayerStatus playerStatus = getPlayerStatusEntityById(playerStatusId);
-        return toPlayerStatusResponse(playerStatus);
-    }
-
-    public List<PlayerStatusResponse> getAllPlayersStatusesInRoom(Long roomId) {
-        List<PlayerStatusResponse> allPlayersStatusesInRoom = playerStatusRepository.findAllPlayerStatusByRoomId(roomId)
-                .stream()
-                .map(item -> toPlayerStatusResponse(item))
-                .collect(Collectors.toList());
-
-        if(allPlayersStatusesInRoom.isEmpty()){
-            throw new ResourceNotFoundException("Players Statuses","roomId", roomId);
+        if(playerClassDtoList.isEmpty()){
+            throw new ResourceNotFoundException("No class found", HttpStatus.NOT_FOUND);
         }
 
-        return allPlayersStatusesInRoom;
+        return RaceAndClassResponse.builder()
+                .playerRaces(playerRaceDtoList)
+                .playerClasses(playerClassDtoList)
+                .build();
     }
 
-    public ResponseEntity joinRoom(Long roomId, String roomPassword, UserPrincipal currentUser) {
-
-        if(playerIsInAnyRoom(currentUser.getId())){
-            return new ResponseEntity<>("You are already in this or another room, to join please leave room you are already in", HttpStatus.BAD_REQUEST);
-        }if(roomRepository.isRoomFull(roomId)){
-            return new ResponseEntity<>("Room is full", HttpStatus.BAD_REQUEST);
-        }
+    public void joinRoom(Long roomId, String roomPassword, Long userId) {
+        User user = getUser(userId);
 
         RoomDto roomDto = getRoomDto(roomId);
-        if (roomDto.getRoomPassword().equals(roomPassword)) {
-            try {
-                PlayerStatusDto playerStatusDto = getPlayerStatusEntityByRoomId(roomId, currentUser.getId()).dto();
-                playerStatusDto.setPlayerInRoom(true);
-                updatePlayerInRoomAndUserInRoom(roomDto, playerStatusDto, true);
-
-                return ResponseEntity.ok("User with id: "+ currentUser.getId() +" joined room with id: " + roomId);
-
-            } catch (ResourceNotFoundException e) {
-                PlayerStatusDto playerStatusDto = createDefaultPlayerStatus(roomId, currentUser).dto();
-                updatePlayerInRoomAndUserInRoom(roomDto, playerStatusDto, true);
-
-                return ResponseEntity.ok("Player status was created and user joined room with id: " + roomId);
-            }
-        } else {
-            return new ResponseEntity<>("Wrong password user could not enter the room", HttpStatus.BAD_REQUEST);
+        if (!roomDto.getRoomPassword().equals(roomPassword)) {
+            throw new NotAuthorizedException("join this room, wrong password", HttpStatus.UNAUTHORIZED);
         }
-    }
 
-    public boolean playerIsInAnyRoom(Long userId) {
-        return playerStatusRepository.playerIsInAnyRoom(userId);
+        if(playerStatusRepository.playerIsInAnyRoom(user)){
+            throw new UserAlreadyInRoomException(userId, HttpStatus.BAD_REQUEST);
+        }
+
+        List<PlayerStatus> allPlayerStatus = getAllPlayerStatusInRoom(roomId);
+        allPlayerStatus.removeIf(playerStatus -> playerStatus.getUser().getId().equals(userId));
+
+        if(roomDto.getSlots() <= allPlayerStatus.size() || roomRepository.isRoomFull(roomId)){
+            throw new RoomIsFullException(HttpStatus.BAD_REQUEST);
+        }
+
+        try {
+            PlayerStatusDto playerStatusDto = getPlayerStatusEntityByRoomId(roomId, user).dto();
+            updatePlayerInRoomAndUserInRoom(roomDto, playerStatusDto, true);
+        } catch (ResourceNotFoundException e) {
+            PlayerStatusDto playerStatusDto = createDefaultPlayerStatus(roomId, user).dto();
+            updatePlayerInRoomAndUserInRoom(roomDto, playerStatusDto, true);
+        }
     }
 
     public void exitRoom(Long roomId, Long userId) {
         RoomDto roomDto = getRoomDto(roomId);
-        PlayerStatusDto playerStatusDto = playerStatusRepository.findByRoomIdAndUserId(roomId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Player Status", "roomId: " + roomId + " and userId: ", userId)).dto();
+        PlayerStatusDto playerStatusDto = getPlayerStatusEntityByRoomId(roomId, getUser(userId)).dto();
+
+        playerInRoom(playerStatusDto.playerInRoom, "leave a room that you are not in");
 
         updatePlayerInRoomAndUserInRoom(roomDto, playerStatusDto, false);
     }
 
-    public ResponseEntity setPlayerLevel(Long playerStatusId, Long levelValue) {
-        PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(playerStatusId).dto();
-        playerInRoom(playerStatusDto.playerInRoom, playerStatusDto.getUserId(), playerStatusDto.getRoomId());
+    public void exitRoomOnLogIn(Long userId) {
+        User user = getUser(userId);
+        Long roomId = roomRepository.findRoomIdWithPlayerIn(user)
+                .orElseThrow(() -> new ResourceNotFoundException("RoomId", "UserId", userId, HttpStatus.NOT_FOUND));
 
-        if(playerStatusDto.getPlayerLevel() + levelValue < 1){
-            return new ResponseEntity<>("Player level can't be lower then 1", HttpStatus.BAD_REQUEST);
-        }
+        RoomDto roomDto = getRoomDto(roomId);
+        PlayerStatusDto playerStatusDto = getPlayerStatusEntityByRoomId(roomId, user).dto();
 
-        if (playerStatusDto.getPlayerLevel() + levelValue > 9){
-            playerStatusDto.setPlayerLevel(playerStatusDto.getPlayerLevel() + levelValue);
-            playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
-
-            RoomDto roomDto = getRoomDto(playerStatusDto.getRoomId());
-            roomDto.setComplete(true);
-            roomRepository.save(Room.fromDto(roomDto));
-            return ResponseEntity.ok("Player achieved level 10, game is over");
-        }
-
-        playerStatusDto.setPlayerLevel(playerStatusDto.getPlayerLevel() + levelValue);
-        playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
-
-        return ResponseEntity.ok("Player level set successfully");
+        updatePlayerInRoomAndUserInRoom(roomDto, playerStatusDto, false);
     }
 
-    public ResponseEntity setPlayerBonus(Long playerStatusId, Long bonusValue) {
-        PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(playerStatusId).dto();
-        playerInRoom(playerStatusDto.playerInRoom, playerStatusDto.getUserId(), playerStatusDto.getRoomId());
-
-        if(playerStatusDto.getPlayerBonus() + bonusValue < 0){
-            return new ResponseEntity<>("Player bonus can't be lower then 0", HttpStatus.BAD_REQUEST);
-        }
-
-        playerStatusDto.setPlayerBonus(playerStatusDto.getPlayerBonus() + bonusValue);
-        playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
-        return ResponseEntity.ok("Player bonus set successfully");
+    public PlayerStatusResponse getPlayerStatusResponseByRoomId(Long roomId , Long userId) {
+        PlayerStatus playerStatus = getPlayerStatusEntityByRoomId(roomId, getUser(userId));
+        return toPlayerStatusResponse(playerStatus);
     }
 
-    public ResponseEntity changeGender(Long playerStatusId) {
-        PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(playerStatusId).dto();
-        playerInRoom(playerStatusDto.playerInRoom, playerStatusDto.getUserId(), playerStatusDto.getRoomId());
+    public PlayerStatusResponse getPlayerStatusResponseById(Long playerStatusId) {
+        PlayerStatus playerStatus = getPlayerStatusEntityById(playerStatusId);
+        return toPlayerStatusResponse(playerStatus);
+    }
 
-        String newGender = playerStatusDto.getGender().equals("men")  ? "women" : "men";
+    public List<PlayerStatusResponse> getAllPlayersStatusesResponse(Long roomId) {
+        List<PlayerStatus> allPlayerStatus = getAllPlayerStatusInRoom(roomId);
+        if(allPlayerStatus.isEmpty()){
+            throw new ResourceNotFoundException("Players Statuses","roomId", roomId, HttpStatus.NOT_FOUND);
+        }else{
+            return allPlayerStatus
+                    .stream()
+                    .map(this::toPlayerStatusResponse)
+                    .collect(Collectors.toList());
+        }
+    }
+
+    public List<PlayerStatusResponse> getPlayersStatusesResponseInRoom(Long roomId) {
+        List<PlayerStatus> allPlayerStatus = playerStatusRepository.findAllPlayerStatusesInRoom(roomId);
+        if(allPlayerStatus.isEmpty()){
+            throw new ResourceNotFoundException("Players Statuses","roomId", roomId, HttpStatus.NOT_FOUND);
+        }else{
+            return allPlayerStatus
+                    .stream()
+                    .map(this::toPlayerStatusResponse)
+                    .collect(Collectors.toList());
+        }
+    }
+
+    public void setPlayerStatus(BonusLevelEditRequest bonusLevelEditRequest) {
+        PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(bonusLevelEditRequest.getPlayerStatusId()).dto();
+        playerInRoom(playerStatusDto.playerInRoom, "save player status in this room because you are not in it");
+
+        if(bonusLevelEditRequest.getLevelValue() < 1){
+            throw new WrongValueException("Player level can't be lower then 1", HttpStatus.BAD_REQUEST);
+        }
+
+        if(bonusLevelEditRequest.getBonusValue() < 0){
+            throw new WrongValueException("Player bonus can't be lower then 0", HttpStatus.BAD_REQUEST);
+        }
+
+        if (bonusLevelEditRequest.getLevelValue() > 9){
+            CloseRoom(playerStatusDto);
+        }
+
+        playerStatusDto.setPlayerLevel(bonusLevelEditRequest.getLevelValue());
+        playerStatusDto.setPlayerBonus(bonusLevelEditRequest.getBonusValue());
+        playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
+    }
+
+    private void CloseRoom(PlayerStatusDto playerStatusDto) {
+        RoomDto roomDto = getRoomDto(playerStatusDto.getRoomId());
+        roomDto.setComplete(true);
+        roomDto.setUsersInRoom(1L);
+        roomRepository.save(Room.fromDto(roomDto));
+        playerStatusRepository.allPLayersLeaveRoom(playerStatusDto.getRoomId());
+    }
+
+    public String changeGender(Long playerStatusId) {
+        PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(playerStatusId).dto();
+        playerInRoom(playerStatusDto.playerInRoom, "change gender in this room because you are not in it");
+
+        String newGender = playerStatusDto.getGender().equals("male")  ? "female" : "male";
         playerStatusDto.setGender(newGender);
         playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
 
-        return ResponseEntity.ok("Player gender was changed successfully to: " + newGender);
+        return newGender;
     }
 
-    public ResponseEntity changeFirstRace(Long playerStatusId, Long raceId) {
+    public void setFirstRace(Long playerStatusId, Long raceId) {
         PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(playerStatusId).dto();
-        playerInRoom(playerStatusDto.playerInRoom, playerStatusDto.getUserId(), playerStatusDto.getRoomId());
+        playerInRoom(playerStatusDto.playerInRoom, "change first race in this room because you are not in it");
+        raceExist(raceId);
 
-        playerRaceRepository.findById(raceId)
-                .orElseThrow(() -> new ResourceNotFoundException("Race", "RaceId", raceId)).dto();
+        if(!playerStatusDto.isTwoRaces() && raceId != 0){
+            playerStatusDto.setTwoRaces(true);
+        } if(raceId == 0){
+            playerStatusDto.setTwoRaces(false);
+            playerStatusDto.setSecondRaceId(0L);
+        }
 
         playerStatusDto.setRaceId(raceId);
         playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
-
-        return ResponseEntity.ok("Player race was changed successfully");
     }
 
-    public ResponseEntity changeSecondRace(Long playerStatusId, Long raceId) {
+    public void setSecondRace(Long playerStatusId, Long raceId) {
         PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(playerStatusId).dto();
-        playerInRoom(playerStatusDto.playerInRoom, playerStatusDto.getUserId(), playerStatusDto.getRoomId());
-
-        playerRaceRepository.findById(raceId)
-                .orElseThrow(() -> new ResourceNotFoundException("Race", "RaceId", raceId)).dto();
+        playerInRoom(playerStatusDto.playerInRoom, "change second race in this room because you are not in it");
+        raceExist(raceId);
 
         if(!playerStatusDto.isTwoRaces()){
-            return new ResponseEntity<>("You can't have second race", HttpStatus.BAD_REQUEST);
+            throw new NotAuthorizedException("change second race because you can't have two races", HttpStatus.BAD_REQUEST);
         }
 
         playerStatusDto.setSecondRaceId(raceId);
         playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
-
-        return ResponseEntity.ok("Second race was changed successfully");
     }
 
-    public ResponseEntity toggleTwoRaces(Long playerStatusId) {
+    public void setFirstClass(Long playerStatusId, Long classId) {
         PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(playerStatusId).dto();
-        playerInRoom(playerStatusDto.playerInRoom, playerStatusDto.getUserId(), playerStatusDto.getRoomId());
+        playerInRoom(playerStatusDto.playerInRoom, "change first class in this room because you are not in it");
+        classExist(classId);
 
-        playerStatusDto.setTwoRaces(!playerStatusDto.isTwoRaces());
-        playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
-
-        if(!playerStatusDto.twoRaces){
-            return ResponseEntity.ok("Player is able to have one race");
+        if(!playerStatusDto.isTwoClasses() && classId != 0){
+            playerStatusDto.setTwoClasses(true);
+        } if(classId == 0){
+            playerStatusDto.setTwoClasses(false);
+            playerStatusDto.setSecondClassId(0L);
         }
-
-        return ResponseEntity.ok("Player is able to have second race");
-    }
-
-    public ResponseEntity changeClass(Long playerStatusId, Long classId) {
-        PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(playerStatusId).dto();
-        playerInRoom(playerStatusDto.playerInRoom, playerStatusDto.getUserId(), playerStatusDto.getRoomId());
-
-        playerClassRepository.findById(classId)
-                .orElseThrow(() -> new ResourceNotFoundException("Class", "ClassId", classId)).dto();
 
         playerStatusDto.setClassId(classId);
         playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
-
-        return ResponseEntity.ok("Class was changed successfully");
     }
 
-    public ResponseEntity changeSecondClass(Long playerStatusId, Long classId) {
+    public void setSecondClass(Long playerStatusId, Long classId) {
         PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(playerStatusId).dto();
-        playerInRoom(playerStatusDto.playerInRoom, playerStatusDto.getUserId(), playerStatusDto.getRoomId());
+        playerInRoom(playerStatusDto.playerInRoom, "change second class in this room because you are not in it");
+        classExist(classId);
 
-        playerClassRepository.findById(classId)
-                .orElseThrow(() -> new ResourceNotFoundException("Class", "ClassId", classId)).dto();
-
-        if(playerStatusDto.isTwoClasses()){
-            playerStatusDto.setSecondClassId(classId);
-            playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
-
-            return ResponseEntity.ok("Second class was changed successfully");
+        if(!playerStatusDto.isTwoClasses()){
+            throw new NotAuthorizedException("change second class because you can't have two classes", HttpStatus.BAD_REQUEST);
         }
-        return new ResponseEntity<>("You can't have second class", HttpStatus.BAD_REQUEST);
-    }
 
-    public ResponseEntity toggleTwoClasses(Long playerStatusId) {
-        PlayerStatusDto playerStatusDto = getPlayerStatusEntityById(playerStatusId).dto();
-        playerInRoom(playerStatusDto.playerInRoom, playerStatusDto.getUserId(), playerStatusDto.getRoomId());
-
-        playerStatusDto.setTwoClasses(!playerStatusDto.isTwoClasses());
+        playerStatusDto.setSecondClassId(classId);
         playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
-
-        if(!playerStatusDto.twoClasses){
-            return ResponseEntity.ok("Player is able to have one class");
-        }
-
-        return ResponseEntity.ok("Player is able to have second class");
     }
 
-    public void deletePlayerStatus(Long playerStatusId) {
-        PlayerStatus playerStatus = getPlayerStatusEntityById(playerStatusId);
-        RoomDto roomDto = getRoomDto(playerStatus.getRoomId());
+    public List<PlayerStatusResponse> getGameSummary(Long roomId) {
+        List<PlayerStatus> allPlayerStatus = playerStatusRepository.findAllSortedPlayerStatusByRoomId(roomId);
+        if(allPlayerStatus.isEmpty()){
+            throw new ResourceNotFoundException("Players Statuses","roomId", roomId, HttpStatus.NOT_FOUND);
+        }else{
+            return allPlayerStatus
+                    .stream()
+                    .map(this::toPlayerStatusResponse)
+                    .collect(Collectors.toList());
+        }
+    }
+
+    public void deletePlayerStatus(Long playerStatusId, Long userId) {
+        if(!playerStatusRepository.existsById(playerStatusId)){
+            throw new ResourceNotFoundException("Player Status","playerStatusId", playerStatusId, HttpStatus.NOT_FOUND);
+        }
+
+        RoomDto roomDto = getRoomDto(playerStatusId);
+
+        if(!roomDto.getUser().getId().equals(userId)){
+            throw new NotAuthorizedException("delete this player status because you are not creator of the room that player status belong" , HttpStatus.UNAUTHORIZED);
+        }
+
         roomDto.setUsersInRoom(roomDto.getUsersInRoom() - 1L);
         usersInRoomUpdate(roomDto);
-        playerStatusRepository.delete(playerStatus);
+        playerStatusRepository.deleteById(playerStatusId);
     }
 
-    public ResponseEntity deletePlayersStatuses(Long roomId) {
-        List<PlayerStatus> allPlayersStatuses = playerStatusRepository.findAllPlayerStatusByRoomId(roomId);
-
-        if (allPlayersStatuses.isEmpty()){
-            return new ResponseEntity<>("No room by id:" + roomId + "was wound to delete players", HttpStatus.NOT_FOUND);
+    public void deletePlayersStatuses(Long roomId, Long creatorId) {
+        RoomDto roomDto = getRoomDto(roomId);
+        if(!roomDto.getUser().getId().equals(creatorId)){
+            throw new NotAuthorizedException("delete all player statuses in this room because you are not creator of this room" , HttpStatus.UNAUTHORIZED);
         }
 
-        RoomDto roomDto = getRoomDto(roomId);
+        List<PlayerStatus> allPlayersStatuses = getAllPlayerStatusInRoom(roomId);
+
+        if (allPlayersStatuses.isEmpty()){
+            throw new ResourceNotFoundException("Players Statuses","roomId", roomId, HttpStatus.NOT_FOUND);
+        }
+
+        playerStatusRepository.deleteAll(allPlayersStatuses);
         roomDto.setUsersInRoom(0L);
         usersInRoomUpdate(roomDto);
-        playerStatusRepository.deleteAll(allPlayersStatuses);
-
-        return ResponseEntity.ok("All statuses in the room were deleted");
     }
 
-    private PlayerStatus getPlayerStatusEntityByRoomId(Long roomId, Long userId) {
-        return playerStatusRepository.findByRoomIdAndUserId(roomId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Player Status", "roomId: "+ roomId + " and userId", userId));
+    private void raceExist(Long raceId) {
+        if(!playerRaceRepository.existsById(raceId)){
+            throw new ResourceNotFoundException("Race", "RaceId", raceId, HttpStatus.NOT_FOUND);
+        }
+    }
+
+    private void classExist(Long classId) {
+        if(!playerClassRepository.existsById(classId)){
+            throw new ResourceNotFoundException("Class", "ClassId", classId, HttpStatus.NOT_FOUND);
+        }
+    }
+
+    private List<PlayerStatus> getAllPlayerStatusInRoom(Long roomId) {
+        return playerStatusRepository.findAllPlayerStatusesByRoomId(roomId);
+    }
+
+    private PlayerStatus getPlayerStatusEntityByRoomId(Long roomId, User user) {
+        return playerStatusRepository.findByRoomIdAndUserId(roomId, user)
+                .orElseThrow(() -> new ResourceNotFoundException("Player Status", "roomId: "+ roomId + " and userId", user.getId(), HttpStatus.NOT_FOUND));
     }
 
     private PlayerStatus getPlayerStatusEntityById(Long playerStatusId) {
         return playerStatusRepository.findById(playerStatusId)
-                .orElseThrow(() -> new ResourceNotFoundException("Player Status","playerStatusId", playerStatusId));
+                .orElseThrow(() -> new ResourceNotFoundException("Player Status","playerStatusId", playerStatusId, HttpStatus.NOT_FOUND));
     }
 
     private void updatePlayerInRoomAndUserInRoom(RoomDto roomDto, PlayerStatusDto playerStatusDto, boolean joiningOrLeaving) {
         if(joiningOrLeaving){
+            playerStatusDto.setPlayerInRoom(true);
             roomDto.setUsersInRoom(roomDto.getUsersInRoom() + 1L);
-
-            playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
-            usersInRoomUpdate(roomDto);
         }else{
             playerStatusDto.setPlayerInRoom(false);
             roomDto.setUsersInRoom(roomDto.getUsersInRoom() - 1L);
-
-            playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
-            usersInRoomUpdate(roomDto);
         }
+
+        playerStatusRepository.save(PlayerStatus.fromDto(playerStatusDto));
+        usersInRoomUpdate(roomDto);
     }
 
     private PlayerStatusResponse toPlayerStatusResponse(PlayerStatus playerStatus) {
         return PlayerStatusResponse.builder()
-                .playerStatusId(playerStatus.getId())
-                .userId(playerStatus.getUserId())
-                .userName(getUserDto(playerStatus.getUserId()).getUsername())
-                .playerClassDto(getPlayerClass(playerStatus.getClassId()))
+                .id(playerStatus.getId())
+                .user(playerStatus.getUser().response())
+                .playerClassDto(getClass(playerStatus.getClassId()))
+                .secondPlayerClassDto(getClass(playerStatus.getSecondClassId()))
                 .twoClasses(playerStatus.isTwoClasses())
-                .secondPlayerClassDto(getPlayerClass(playerStatus.getSecondClassId()))
-                .playerRaceDto(getPlayerRace(playerStatus.getRaceId()))
-                .twoClasses(playerStatus.isTwoClasses())
-                .secondPlayerRaceDto(getPlayerRace(playerStatus.getSecondRaceId()))
+                .playerRaceDto(getRace(playerStatus.getRaceId()))
+                .secondPlayerRaceDto(getRace(playerStatus.getSecondRaceId()))
+                .twoRaces(playerStatus.isTwoRaces())
                 .playerLevel(playerStatus.getPlayerLevel())
                 .playerBonus(playerStatus.getPlayerBonus())
+                .playerInRoom(playerStatus.isPlayerInRoom())
                 .gender(playerStatus.getGender())
                 .build();
     }
 
-    private PlayerStatus createDefaultPlayerStatus(Long roomId, UserPrincipal currentUser) {
+    private PlayerRaceDto getRace(Long raceId) {
+        return playerRaceRepository.findById(raceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Race", "Race Id", raceId, HttpStatus.NOT_FOUND)).dto();
+    }
+
+    private PlayerClassDto getClass(Long classId) {
+        return playerClassRepository.findById(classId)
+                .orElseThrow(() -> new ResourceNotFoundException("Class", "Class Id", classId, HttpStatus.NOT_FOUND)).dto();
+    }
+
+    private PlayerStatus createDefaultPlayerStatus(Long roomId, User user) {
         return PlayerStatus.builder()
                 .roomId(roomId)
-                .userId(currentUser.getId())
-                .classId(0L)
+                .user(user)
+                .classId(1L)
+                .secondClassId(1L)
                 .twoClasses(false)
-                .secondClassId(0L)
-                .raceId(0L)
+                .raceId(1L)
+                .secondRaceId(1L)
                 .twoRaces(false)
-                .secondRaceId(0L)
                 .playerLevel(1L)
                 .playerBonus(0L)
                 .playerInRoom(true)
-                .gender(getUserDto(currentUser.getId()).getGender())
+                .gender(user.getGender())
                 .build();
     }
 
-    private UserDto getUserDto(Long userId){
+    private User getUser(Long userId){
         return userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "UserId", userId)).dto();
+                .orElseThrow(() -> new ResourceNotFoundException("User", "UserId", userId, HttpStatus.NOT_FOUND));
     }
 
     private RoomDto getRoomDto(Long roomId) {
         return roomRepository.findById(roomId)
-                .orElseThrow(() -> new ResourceNotFoundException("Room", "roomId", roomId)).dto();
+                .orElseThrow(() -> new ResourceNotFoundException("Room", "roomId", roomId, HttpStatus.NOT_FOUND)).dto();
     }
 
     private void usersInRoomUpdate(RoomDto roomDto) {
@@ -368,9 +437,9 @@ public class PlayerStatusFacade {
         roomRepository.save(room);
     }
 
-    private void playerInRoom(boolean playerInRoom, Long userId, Long roomId){
+    private void playerInRoom(boolean playerInRoom, String message){
         if(!playerInRoom){
-            throw new UserNotInRoomException(userId, roomId);
+            throw new NotAuthorizedException(message, HttpStatus.UNAUTHORIZED);
         }
     }
 }

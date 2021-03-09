@@ -4,9 +4,7 @@ import com.project.munchkin.playerStatus.dto.PlayerRaceDto;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
 @Entity
@@ -20,6 +18,8 @@ import javax.validation.constraints.NotNull;
 public class PlayerRace {
 
     @Id
+    @Setter
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
     @NotNull
@@ -29,23 +29,15 @@ public class PlayerRace {
     String raceIcon;
 
     @NotNull
+    @Lob
     String raceDescription;
-
-    public PlayerRace fromDto (PlayerRaceDto playerRaceDto){
-        return PlayerRace.builder()
-                .id(playerRaceDto.getId())
-                .raceName(playerRaceDto.getRaceName())
-                .raceIcon(playerRaceDto.getRaceIcon())
-                .raceDescription(playerRaceDto.getRaceDescription())
-                .build();
-    }
 
     public  PlayerRaceDto dto (){
         return PlayerRaceDto.builder()
                 .id(id)
-                .raceName(raceName)
-                .raceIcon(raceIcon)
-                .raceDescription(raceDescription)
+                .name(raceName)
+                .icon(raceIcon)
+                .description(raceDescription)
                 .build();
     }
 }

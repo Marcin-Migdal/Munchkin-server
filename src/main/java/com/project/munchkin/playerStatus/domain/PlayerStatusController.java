@@ -1,13 +1,18 @@
 package com.project.munchkin.playerStatus.domain;
 
+import com.project.munchkin.base.dto.ApiResponse;
 import com.project.munchkin.base.security.CurrentUser;
 import com.project.munchkin.base.security.UserPrincipal;
 import com.project.munchkin.playerStatus.dto.EditRequest.BonusLevelEditRequest;
 import com.project.munchkin.playerStatus.dto.EditRequest.ClassRaceEditRequest;
-import com.project.munchkin.playerStatus.dto.JoinLeaveRequest;
-import com.project.munchkin.playerStatus.dto.PlayerClassDto;
-import com.project.munchkin.playerStatus.dto.PlayerRaceDto;
+import com.project.munchkin.playerStatus.dto.JoinRequest;
 import com.project.munchkin.playerStatus.dto.PlayerStatus.PlayerStatusResponse;
+import com.project.munchkin.playerStatus.dto.RaceAndClassResponse;
+import com.project.munchkin.playerStatus.exception.RoomIsFullException;
+import com.project.munchkin.playerStatus.exception.UserAlreadyInRoomException;
+import com.project.munchkin.playerStatus.exception.WrongValueException;
+import com.project.munchkin.room.exception.NotAuthorizedException;
+import com.project.munchkin.room.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,106 +27,178 @@ public class PlayerStatusController {
     @Autowired
     PlayerStatusFacade playerStatusFacade;
 
-    @GetMapping("/race/byId/{raceId}")
-    public PlayerRaceDto getPlayerRace(@PathVariable Long raceId){
-        return playerStatusFacade.getPlayerRace(raceId);
+    @GetMapping("/getAllRacesAndClasses")
+    public ResponseEntity<?> getAllRacesAndClasses(){
+        try{
+            RaceAndClassResponse allPlayerRacesAndClasses = playerStatusFacade.getAllRacesAndClasses();
+            return ResponseEntity.ok().body(new ApiResponse<>(true, "All races and classes returned successfully", allPlayerRacesAndClasses));
+        }catch (ResourceNotFoundException e){
+            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
+        }
     }
 
-    @GetMapping("/race/getAll")
-    public List<PlayerRaceDto> getAllPlayerRaces(){
-        return playerStatusFacade.getAllPlayerRaces();
+    @GetMapping("/byRoomId/{roomId}")
+    public ResponseEntity<?> getPlayerStatusByRoomId(@PathVariable Long roomId, @CurrentUser UserPrincipal currentUser){
+        try{
+            PlayerStatusResponse playerStatusResponse = playerStatusFacade.getPlayerStatusResponseByRoomId(roomId, currentUser.getId());
+            return ResponseEntity.ok().body(new ApiResponse<>(true,
+                    "Player Status returned successfully by room id: " + roomId + " and user id: " + currentUser.getId(), playerStatusResponse));
+        }catch (ResourceNotFoundException e){
+            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
+        }
     }
 
-    @GetMapping("/class/byId/{classId}")
-    public PlayerClassDto getPlayerClass(@PathVariable Long classId){
-        return playerStatusFacade.getPlayerClass(classId);
+    @GetMapping("/byPlayerStatusId/{playerStatusId}")
+    public ResponseEntity<?> getPlayerStatusById(@PathVariable Long playerStatusId){
+        try{
+            PlayerStatusResponse playerStatusResponse = playerStatusFacade.getPlayerStatusResponseById(playerStatusId);
+            return ResponseEntity.ok().body(new ApiResponse<>(true,
+                    "Player Status returned successfully by player Status id: " + playerStatusId, playerStatusResponse));
+        }catch (ResourceNotFoundException e){
+            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
+        }
     }
 
-    @GetMapping("/class/getAll")
-    public List<PlayerClassDto> getAllPlayerClasses(){
-        return playerStatusFacade.getAllPlayerClasses();
+    @GetMapping("/allPlayersStatuses/{roomId}")
+    public ResponseEntity<?> getAllPlayersStatuses(@PathVariable Long roomId){
+        try{
+            List<PlayerStatusResponse> allPlayersStatusResponse = playerStatusFacade.getAllPlayersStatusesResponse(roomId);
+            return ResponseEntity.ok().body(new ApiResponse<>(true,
+                    "All Player Statuses in the room returned successfully by room id: " + roomId, allPlayersStatusResponse));
+        }catch (ResourceNotFoundException e){
+            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
+        }
     }
 
-    @GetMapping("/status/byRoomId/{roomId}")
-    public PlayerStatusResponse getPlayerStatusByRoomId(@PathVariable Long roomId, @CurrentUser UserPrincipal currentUser){
-        return playerStatusFacade.getPlayerStatusByRoomId(roomId, currentUser);
-    }
-
-    @GetMapping("/status/byPlayerStatusId/{playerStatusId}")
-    public PlayerStatusResponse getPlayerStatusById(@PathVariable Long playerStatusId){
-        return playerStatusFacade.getPlayerStatusById(playerStatusId);
-    }
-
-    @GetMapping("/status/allPlayersStatuses/{roomId}")
-    public List<PlayerStatusResponse> getAllPlayersStatuses(@PathVariable Long roomId){
-        return playerStatusFacade.getAllPlayersStatusesInRoom(roomId);
-    }
-
-
-    @DeleteMapping("/delete/oneStatus/byId/{playerStatusId}")
-    public ResponseEntity<?> deletePlayerStatus (@PathVariable Long playerStatusId){
-        playerStatusFacade.deletePlayerStatus(playerStatusId);
-        return ResponseEntity.ok("Player Status was deleted successfully");
-    }
-
-    @DeleteMapping("/delete/allStatuses/byRoomId/{roomId}")
-    public ResponseEntity<?> deleteAllPlayersStatuses (@PathVariable Long roomId){
-        return playerStatusFacade.deletePlayersStatuses(roomId);
+    @GetMapping("/allPlayersStatusesInRoom/{roomId}")
+    public ResponseEntity<?> getPlayersStatusesResponseInRoom(@PathVariable Long roomId){
+        try{
+            List<PlayerStatusResponse> allPlayersStatusResponse = playerStatusFacade.getPlayersStatusesResponseInRoom(roomId);
+            return ResponseEntity.ok().body(new ApiResponse<>(true,
+                    "Player Statuses in the room returned successfully by room id: " + roomId, allPlayersStatusResponse));
+        }catch (ResourceNotFoundException e){
+            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
+        }
     }
 
     @PutMapping("joinRoom")
-    public ResponseEntity<?> joinRoom (@Valid @RequestBody JoinLeaveRequest joinLeaveRequest, @CurrentUser UserPrincipal currentUser){
-        return playerStatusFacade.joinRoom(joinLeaveRequest.getRoomId(), joinLeaveRequest.getRoomPassword(), currentUser);
+    public ResponseEntity<?> joinRoom (@Valid @RequestBody JoinRequest joinRequest, @CurrentUser UserPrincipal currentUser){
+        try{
+            playerStatusFacade.joinRoom(joinRequest.getRoomId(), joinRequest.getRoomPassword(), currentUser.getId());
+            return ResponseEntity.ok().body(new ApiResponse<>(true, "Player joined room successfully"));
+        }catch (ResourceNotFoundException | UserAlreadyInRoomException | RoomIsFullException | NotAuthorizedException e){
+            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
+        }
     }
 
-    @PatchMapping("exitRoom")
-    public ResponseEntity<?> exitRoom (@RequestBody JoinLeaveRequest joinLeaveRequest, @CurrentUser UserPrincipal currentUser){
-        playerStatusFacade.exitRoom(joinLeaveRequest.getRoomId(), currentUser.getId());
-        return ResponseEntity.ok("Player leaves the room");
+    @PatchMapping("exitRoom/{roomId}")
+    public ResponseEntity<?> exitRoom (@PathVariable Long roomId, @CurrentUser UserPrincipal currentUser){
+        try{
+            playerStatusFacade.exitRoom(roomId, currentUser.getId());
+            return ResponseEntity.ok().body(new ApiResponse<>(true,"Player leaves the room successfully"));
+        }catch (ResourceNotFoundException | NotAuthorizedException e){
+            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
+        }
     }
 
-    @PatchMapping("/setLevel")
-    public ResponseEntity<?> setPlayerLevel (@RequestBody BonusLevelEditRequest bonusLevelEditRequest){
-        return playerStatusFacade.setPlayerLevel(bonusLevelEditRequest.getPlayerStatusId(), bonusLevelEditRequest.getNewValue());
+    @PatchMapping("/exitRoomOnLogIn")
+    public ResponseEntity<?> exitRoomOnLogIn (@CurrentUser UserPrincipal currentUser){
+        try{
+            playerStatusFacade.exitRoomOnLogIn(currentUser.getId());
+            return ResponseEntity.ok().body(new ApiResponse<>(true,"Player leaves the room successfully"));
+        }catch (ResourceNotFoundException | NotAuthorizedException e){
+            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
+        }
     }
 
-    @PatchMapping("/setBonus")
-    public ResponseEntity<?> setPlayerBonus (@RequestBody BonusLevelEditRequest bonusLevelEditRequest){
-        return playerStatusFacade.setPlayerBonus(bonusLevelEditRequest.getPlayerStatusId(), bonusLevelEditRequest.getNewValue());
+    @PutMapping("/setPlayerStatus")
+    public ResponseEntity<?> setPlayerStatus (@RequestBody BonusLevelEditRequest bonusLevelEditRequest){
+        try{
+            playerStatusFacade.setPlayerStatus(bonusLevelEditRequest);
+            return ResponseEntity.ok().body(new ApiResponse<>(true,"Player level is set successfully"));
+        }catch (ResourceNotFoundException | NotAuthorizedException | WrongValueException e){
+            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
+        }
     }
 
     @PatchMapping("/changeGender/{playerStatusId}")
     public ResponseEntity<?> changeGender (@PathVariable Long playerStatusId){
-        return playerStatusFacade.changeGender(playerStatusId);
+        try{
+            String changedGender = playerStatusFacade.changeGender(playerStatusId);
+            return ResponseEntity.ok().body(new ApiResponse<>(true,"Player gender was changed successfully to: " + changedGender));
+        }catch (ResourceNotFoundException | NotAuthorizedException e){
+            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
+        }
     }
 
-    @PatchMapping("/changeRace")
+    @PatchMapping("/race/changeRace")
     public ResponseEntity<?> changeFirstRace (@RequestBody ClassRaceEditRequest classRaceEditRequest){
-        return playerStatusFacade.changeFirstRace(classRaceEditRequest.getPlayerStatusId(), classRaceEditRequest.getNewId());
+        try{
+            playerStatusFacade.setFirstRace(classRaceEditRequest.getPlayerStatusId(), classRaceEditRequest.getNewId());
+            return ResponseEntity.ok().body(new ApiResponse<>(true,"Player race was changed successfully"));
+        }catch (ResourceNotFoundException | NotAuthorizedException e){
+            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
+        }
     }
 
-    @PatchMapping("/changeSecondRace")
+    @PatchMapping("/race/changeSecondRace")
     public ResponseEntity<?> changeSecondRace (@RequestBody ClassRaceEditRequest classRaceEditRequest){
-        return playerStatusFacade.changeSecondRace(classRaceEditRequest.getPlayerStatusId(), classRaceEditRequest.getNewId());
+        try{
+            playerStatusFacade.setSecondRace(classRaceEditRequest.getPlayerStatusId(), classRaceEditRequest.getNewId());
+            return ResponseEntity.ok().body(new ApiResponse<>(true,"Second player race was changed successfully"));
+        }catch (ResourceNotFoundException | NotAuthorizedException e){
+            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
+        }
     }
 
-    @PatchMapping("/setTwoRaces/{playerStatusId}")
-    public ResponseEntity<?> setTwoRaces(@PathVariable Long playerStatusId){
-        return playerStatusFacade.toggleTwoRaces(playerStatusId);
-    }
-
-    @PatchMapping("/changeClass")
+    @PatchMapping("/class/changeClass")
     public ResponseEntity changeFirstClass(@RequestBody ClassRaceEditRequest classRaceEditRequest){
-        return playerStatusFacade.changeClass(classRaceEditRequest.getPlayerStatusId(), classRaceEditRequest.getNewId());
+        try{
+            playerStatusFacade.setFirstClass(classRaceEditRequest.getPlayerStatusId(), classRaceEditRequest.getNewId());
+            return ResponseEntity.ok().body(new ApiResponse<>(true,"Player class was changed successfully"));
+        }catch (ResourceNotFoundException | NotAuthorizedException e){
+            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
+        }
     }
 
-    @PatchMapping("/changeSecondClass")
+    @PatchMapping("/class/changeSecondClass")
     public ResponseEntity<?> changeSecondClass (@RequestBody ClassRaceEditRequest classRaceEditRequest){
-        return playerStatusFacade.changeSecondClass(classRaceEditRequest.getPlayerStatusId(), classRaceEditRequest.getNewId());
+        try{
+            playerStatusFacade.setSecondClass(classRaceEditRequest.getPlayerStatusId(), classRaceEditRequest.getNewId());
+            return ResponseEntity.ok().body(new ApiResponse<>(true,"Second player class was changed successfully"));
+        }catch (ResourceNotFoundException | NotAuthorizedException e){
+            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
+        }
     }
 
-    @PatchMapping("/setTwoClasses/{playerStatusId}")
-    public ResponseEntity<?> setTwoClasses(@PathVariable Long playerStatusId){
-        return playerStatusFacade.toggleTwoClasses(playerStatusId);
+    @GetMapping("/getGameSummary/{roomId}")
+    public ResponseEntity<?> getGameSummary (@PathVariable Long roomId){
+        try{
+            List<PlayerStatusResponse> gameSummary = playerStatusFacade.getGameSummary(roomId);
+            return ResponseEntity.ok().body(new ApiResponse<>(true,"Game Summary returned successfully", gameSummary));
+        }catch (ResourceNotFoundException e){
+            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
+        }
     }
+
+    @DeleteMapping("/delete/oneStatus/byId/{playerStatusId}")
+    public ResponseEntity<?> deletePlayerStatus (@PathVariable Long playerStatusId, @CurrentUser UserPrincipal currentUser){
+        try{
+            playerStatusFacade.deletePlayerStatus(playerStatusId, currentUser.getId());
+            return ResponseEntity.ok().body(new ApiResponse<>(true, "Player Status was deleted successfully"));
+        }catch (ResourceNotFoundException | NotAuthorizedException e){
+            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
+        }
+    }
+
+    @DeleteMapping("/delete/allStatuses/byRoomId/{roomId}")
+    public ResponseEntity<?> deleteAllPlayersStatuses (@PathVariable Long roomId, @CurrentUser UserPrincipal currentUser){
+        try{
+            playerStatusFacade.deletePlayersStatuses(roomId, currentUser.getId());
+            return ResponseEntity.ok().body(new ApiResponse<>(true,"All statuses in the room were deleted"));
+        }catch (ResourceNotFoundException | NotAuthorizedException e){
+            return new ResponseEntity<>(new ApiResponse <>(false, e.getMessage()), e.getHttpStatus());
+        }
+    }
+
 }

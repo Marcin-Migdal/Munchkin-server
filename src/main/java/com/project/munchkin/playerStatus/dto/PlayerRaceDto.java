@@ -9,7 +9,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PUBLIC)
 public class PlayerRaceDto {
     Long id;
-    String raceName;
-    String raceIcon;
-    String raceDescription;
+    String name;
+    String icon;
+    String description;
 }

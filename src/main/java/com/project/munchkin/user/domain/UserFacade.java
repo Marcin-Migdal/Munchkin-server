@@ -2,25 +2,33 @@ package com.project.munchkin.user.domain;
 
 import com.project.munchkin.base.security.JwtTokenProvider;
 import com.project.munchkin.room.exception.ResourceNotFoundException;
-import com.project.munchkin.user.dto.UserDto;
-import com.project.munchkin.user.dto.UserEditRequest;
-import com.project.munchkin.user.dto.UserPasswordRecoveryRequest;
-import com.project.munchkin.user.dto.UserResponse;
+import com.project.munchkin.user.dto.*;
 import com.project.munchkin.user.dto.authRequests.LoginRequest;
 import com.project.munchkin.user.dto.authRequests.SignUpRequest;
 import com.project.munchkin.user.exception.EmailAlreadyExistsException;
+import com.project.munchkin.user.exception.InGameNameAlreadyExistsException;
 import com.project.munchkin.user.exception.UsernameAlreadyExistsException;
 import com.project.munchkin.user.model.User;
 import com.project.munchkin.user.repository.UserRepository;
 import lombok.Builder;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @Service
 @Builder
@@ -47,72 +55,130 @@ public class UserFacade {
         );
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        String jwt = tokenProvider.generateToken(authentication);
-        return jwt;
+        return tokenProvider.generateToken(authentication);
     }
 
-    public User registerUser(SignUpRequest signUpRequest) throws UsernameAlreadyExistsException, EmailAlreadyExistsException {
+    public UserResponse registerUser(SignUpRequest signUpRequest) {
         if (userRepository.existsByUsername(signUpRequest.getUsername())) {
-            throw new UsernameAlreadyExistsException("Username " + signUpRequest.getUsername() + " is already taken!");
+            throw new UsernameAlreadyExistsException("Username " + signUpRequest.getUsername() + " is already taken!", HttpStatus.BAD_REQUEST);
         }
+
+        if (userRepository.existsByInGameName(signUpRequest.getInGameName())) {
+            throw new InGameNameAlreadyExistsException("In game name " + signUpRequest.getInGameName() + "is already in use!", HttpStatus.BAD_REQUEST);
+        }
+
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-            throw new EmailAlreadyExistsException("Email " + signUpRequest.getUsername() + " already in use!");
+            throw new EmailAlreadyExistsException("Email " + signUpRequest.getEmail() + "is already in use!", HttpStatus.BAD_REQUEST);
         }
 
-        User user = new User(signUpRequest.getInGameName(), signUpRequest.getUsername(),
-                signUpRequest.getEmail(), signUpRequest.getUserPassword(), signUpRequest.getIconUrl(), signUpRequest.getGender());;
+        User user = User.builder()
+                .inGameName(signUpRequest.getInGameName())
+                .username(signUpRequest.getUsername())
+                .email(signUpRequest.getEmail())
+                .gender(signUpRequest.getGender())
+                .build();
 
-        user.setUserPassword(passwordEncoder.encode(user.getUserPassword()));
+        user.setUserPassword(passwordEncoder.encode(signUpRequest.getUserPassword()));
 
-        User result = userRepository.save(user);
-        return result;
+        User createdUser = userRepository.save(user);
+        return createdUser.response();
     }
 
     public UserResponse getUserResponse(Long userId) {
-        UserDto userDto = getUser(userId).dto();
-        return UserResponse.builder()
-                .inGameName(userDto.getInGameName())
-                .username(userDto.getUsername())
-                .iconUrl(userDto.getIconUrl())
-                .gender(userDto.getGender())
-                .build();
+        return getUser(userId).response();
     }
 
-    public ResponseEntity editUser(UserEditRequest userEditRequest, Long userId) {
+    public UserResponse editUser(UserEditRequest userEditRequest, Long userId) {
         UserDto userDto = getUser(userId).dto();
+
+        if(!userDto.getUsername().equals(userEditRequest.getUsername()) && userRepository.existsByUsername(userEditRequest.getUsername())){
+            throw new UsernameAlreadyExistsException("Username " + userEditRequest.getUsername() + " is already taken!", HttpStatus.BAD_REQUEST);
+        }
+
+        if(!userDto.getInGameName().equals(userEditRequest.getInGameName()) && userRepository.existsByInGameName(userEditRequest.getInGameName())){
+            throw new InGameNameAlreadyExistsException("In game name " + userEditRequest.getInGameName() + " already in use!", HttpStatus.BAD_REQUEST);
+        }
 
         userDto.setUsername(userEditRequest.getUsername());
         userDto.setInGameName(userEditRequest.getInGameName());
-        userDto.setIconUrl(userEditRequest.getIconUrl());
         userDto.setGender(userEditRequest.getGender());
 
         userRepository.save(User.fromDto(userDto));
 
-        return ResponseEntity.ok("User was edited successfully");
+        return getUser(userId).response();
     }
 
-    public ResponseEntity changeUserPassword(String newPassword, Long userId) {
+    public void editPasswordAuthorization(ChangePasswordRequest changePasswordRequest , Long userId) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        changePasswordRequest.getUsername(),
+                        changePasswordRequest.getOldPassword()
+                )
+        );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        tokenProvider.generateToken(authentication);
+        changeUserPassword(changePasswordRequest.getNewPassword(), userId);
+    }
+
+    public void passwordRecovery(UserPasswordRecoveryRequest userPasswordRecoveryRequest) {
+        if(userRepository.existsByUsername(userPasswordRecoveryRequest.getUsername()) && userRepository.existsByEmail(userPasswordRecoveryRequest.getEmail())){
+            User user = userRepository.findByUsernameOrEmail(userPasswordRecoveryRequest.getUsername(), userPasswordRecoveryRequest.getEmail())
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "username: "+ userPasswordRecoveryRequest.getUsername() + "or email", userPasswordRecoveryRequest.getEmail(), HttpStatus.NOT_FOUND));
+
+            changeUserPassword(userPasswordRecoveryRequest.getUserPassword(), user.getId());
+        }else{
+            throw new ResourceNotFoundException("User", "username: "+ userPasswordRecoveryRequest.getUsername() + "or email", userPasswordRecoveryRequest.getEmail(), HttpStatus.NOT_FOUND);
+        }
+    }
+
+    public void editAvatar(MultipartFile imageFile, Long userId) throws IOException {
+        UserDto userDto = getUser(userId).dto();
+
+        Path currentPath = Paths.get(".");
+        Path absolutePath = currentPath.toAbsolutePath().normalize();
+        String folderPath = absolutePath + "\\src\\main\\resources\\static\\photos\\";
+
+        String sha256hex = DigestUtils.sha256Hex(userDto.getInGameName());
+
+        Path path = Paths.get(folderPath + sha256hex + "_avatar");
+
+        byte[] bytes = imageFile.getBytes();
+        Files.write(path, bytes);
+
+        userDto.setIconPath(path.toString());
+        userRepository.save(User.fromDto(userDto));
+    }
+
+    public byte[] getAvatar(Long userId) throws IOException {
+        String iconUrl = getUser(userId).dto().getIconPath();
+        if(iconUrl == null){
+            throw new ResourceNotFoundException("IconUrl", "UserId", userId, HttpStatus.NOT_FOUND);
+        }
+        InputStream iconStream = new FileInputStream(iconUrl);
+        byte[] bytes = IOUtils.toByteArray(iconStream);
+        iconStream.close();
+        return bytes;
+    }
+
+    public void deleteAvatar(Long userId) throws IOException {
+        UserDto userDto = getUser(userId).dto();
+        if(userDto.getIconPath() != null){
+            Files.delete(Paths.get(userDto.getIconPath()));
+            userDto.setIconPath(null);
+            userRepository.save(User.fromDto(userDto));
+            return;
+        }
+        throw new ResourceNotFoundException("Avatar", "UserId", userId, HttpStatus.BAD_REQUEST);
+    }
+
+    private void changeUserPassword(String newPassword, Long userId) {
         UserDto userDto = getUser(userId).dto();
         userDto.setUserPassword(passwordEncoder.encode(newPassword));
         userRepository.save(User.fromDto(userDto));
-
-        return ResponseEntity.ok("Password was changed successfully");
-    }
-
-    public ResponseEntity passwordRecovery(UserPasswordRecoveryRequest userPasswordRecoveryRequest) {
-        if(userRepository.existsByUsername(userPasswordRecoveryRequest.getUsername()) && userRepository.existsByEmail(userPasswordRecoveryRequest.getEmail())){
-            User user = userRepository.findByUsernameOrEmail(userPasswordRecoveryRequest.getUsername(), userPasswordRecoveryRequest.getEmail())
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "username: "+ userPasswordRecoveryRequest.getUsername() + "or email", userPasswordRecoveryRequest.getEmail()));
-
-            changeUserPassword(userPasswordRecoveryRequest.getUserPassword(), user.getId());
-
-            return ResponseEntity.ok("Password was changed successfully");
-        }
-        return ResponseEntity.ok("There is no account with email or username like that");
     }
 
     private User getUser(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "UserId", userId));
+                .orElseThrow(() -> new ResourceNotFoundException("User", "UserId", userId, HttpStatus.NOT_FOUND));
     }
 }

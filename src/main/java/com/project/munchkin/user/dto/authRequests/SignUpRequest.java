@@ -2,7 +2,6 @@ package com.project.munchkin.user.dto.authRequests;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
@@ -18,7 +17,6 @@ public class SignUpRequest {
     @NotBlank
     @Size(min = 6, max = 15)
     @Getter
-    @Setter
     private String username;
 
     @NotBlank
@@ -31,10 +29,6 @@ public class SignUpRequest {
     @Size(min = 8, max = 20)
     @Getter
     private String userPassword;
-
-    @NotBlank
-    @Getter
-    private String iconUrl;
 
     @NotBlank
     @Getter
