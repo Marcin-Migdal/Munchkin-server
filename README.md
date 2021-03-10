@@ -41,4 +41,4 @@ Those are credentials with which you log in to your local mysql server in mysql 
 - Lastly you have to open mysql workbench.
 - Start your local server and create a database for the server to work with<br />
 you will do that by using this sql statement `CREATE DATABASE munchkin_app` in the query that opened after starting your mysql server.
-## Now you can start munchkin server
+## Now you can start munchtrack server
