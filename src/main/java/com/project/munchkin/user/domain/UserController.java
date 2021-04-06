@@ -22,6 +22,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.net.URI;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -133,6 +134,33 @@ public class UserController {
             return new ResponseEntity<>(new ApiResponse<>(false, "Unknown error occurred while deleting avatar"), HttpStatus.BAD_REQUEST);
         }  catch (ResourceNotFoundException e) {
             return new ResponseEntity<>(new ApiResponse<>(false, e.getMessage()), e.getHttpStatus());
+        }
+    }
+
+    @GetMapping("/getImageFileNames/{isMobile}")
+    public ResponseEntity<?> getImageFilePaths(@PathVariable boolean isMobile) {
+        try {
+            List<String> images = userFacade.getFileName(isMobile);
+            return ResponseEntity.ok().body(new ApiResponse<>(true,
+                    "Files paths returned successfully", images));
+        } catch (IOException e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(new ApiResponse<>(false, "Error occurred while trying to get files paths"), HttpStatus.NOT_FOUND);
+        }catch (ResourceNotFoundException e) {
+            return new ResponseEntity<>(new ApiResponse<>(false, e.getMessage()), e.getHttpStatus());
+        }
+    }
+
+    @GetMapping("/getImage/{isMobile}/{fileName}")
+    public ResponseEntity<?> getImage(@PathVariable boolean isMobile, @PathVariable String fileName) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setCacheControl(CacheControl.noCache().getHeaderValue());
+        try {
+            byte[] image = userFacade.getImage(isMobile, fileName);
+            return new ResponseEntity<>(image, headers, HttpStatus.OK);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(new ApiResponse<>(false, "Error occurred while trying to get image"), HttpStatus.NOT_FOUND);
         }
     }
 }

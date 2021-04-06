@@ -13,6 +13,5 @@ import lombok.experimental.FieldDefaults;
 public class PlayerClassDto {
     Long id;
     String name;
-    String icon;
     String description;
 }

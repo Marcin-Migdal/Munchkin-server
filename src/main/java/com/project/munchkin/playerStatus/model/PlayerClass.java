@@ -25,9 +25,6 @@ public class PlayerClass {
     String className;
 
     @NotNull
-    String classIcon;
-
-    @NotNull
     @Lob
     String classDescription;
 
@@ -35,7 +32,6 @@ public class PlayerClass {
         return PlayerClassDto.builder()
                 .id(id)
                 .name(className)
-                .icon(classIcon)
                 .description(classDescription)
                 .build();
     }

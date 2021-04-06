@@ -26,9 +26,12 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @Builder
@@ -136,7 +139,7 @@ public class UserFacade {
 
         Path currentPath = Paths.get(".");
         Path absolutePath = currentPath.toAbsolutePath().normalize();
-        String folderPath = absolutePath + "\\src\\main\\resources\\static\\photos\\";
+        String folderPath = absolutePath + "\\src\\main\\resources\\static\\avatars\\";
 
         String sha256hex = DigestUtils.sha256Hex(userDto.getInGameName());
 
@@ -147,17 +150,6 @@ public class UserFacade {
 
         userDto.setIconPath(path.toString());
         userRepository.save(User.fromDto(userDto));
-    }
-
-    public byte[] getAvatar(Long userId) throws IOException {
-        String iconUrl = getUser(userId).dto().getIconPath();
-        if(iconUrl == null){
-            throw new ResourceNotFoundException("IconUrl", "UserId", userId, HttpStatus.NOT_FOUND);
-        }
-        InputStream iconStream = new FileInputStream(iconUrl);
-        byte[] bytes = IOUtils.toByteArray(iconStream);
-        iconStream.close();
-        return bytes;
     }
 
     public void deleteAvatar(Long userId) throws IOException {
@@ -180,5 +172,52 @@ public class UserFacade {
     private User getUser(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "UserId", userId, HttpStatus.NOT_FOUND));
+    }
+
+    public List<String> getFileName(boolean isMobile) throws IOException {
+        String folder = isMobile ? "mobile": "desktop";
+        Path currentPath = Paths.get(".");
+        Path absolutePath = currentPath.toAbsolutePath().normalize();
+        String folderPath = absolutePath + "\\src\\main\\resources\\static\\images\\"+ folder;
+
+        List<String> imageFilesNames = new ArrayList<>();
+        DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(folderPath)) ;
+
+        for (Path entry : stream) {
+            if (!Files.isDirectory(entry)) {
+                imageFilesNames.add(entry.getFileName().toString());
+            }
+        }
+
+        if(imageFilesNames.isEmpty()){
+            throw new ResourceNotFoundException("Images name", "folder path", folderPath, HttpStatus.NOT_FOUND);
+        }
+
+        return imageFilesNames;
+    }
+
+    public byte[] getImage(boolean isMobile, String fileName) throws IOException {
+        String folder = isMobile ? "mobile": "desktop";
+        Path currentPath = Paths.get(".");
+        Path absolutePath = currentPath.toAbsolutePath().normalize();
+        String imagePath = absolutePath + "\\src\\main\\resources\\static\\images\\" + folder + "\\" + fileName;
+        byte[] bytes = getFile(imagePath);
+        return bytes;
+    }
+
+    public byte[] getAvatar(Long userId) throws IOException {
+        String iconUrl = getUser(userId).dto().getIconPath();
+        if(iconUrl == null){
+            throw new ResourceNotFoundException("IconUrl", "UserId", userId, HttpStatus.NOT_FOUND);
+        }
+        byte[] bytes = getFile(iconUrl);
+        return bytes;
+    }
+
+    private byte[] getFile(String iconUrl) throws IOException {
+        InputStream iconStream = new FileInputStream(iconUrl);
+        byte[] bytes = IOUtils.toByteArray(iconStream);
+        iconStream.close();
+        return bytes;
     }
 }
