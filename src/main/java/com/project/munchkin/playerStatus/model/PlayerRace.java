@@ -26,9 +26,6 @@ public class PlayerRace {
     String raceName;
 
     @NotNull
-    String raceIcon;
-
-    @NotNull
     @Lob
     String raceDescription;
 
@@ -36,7 +33,6 @@ public class PlayerRace {
         return PlayerRaceDto.builder()
                 .id(id)
                 .name(raceName)
-                .icon(raceIcon)
                 .description(raceDescription)
                 .build();
     }

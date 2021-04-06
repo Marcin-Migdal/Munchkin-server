@@ -78,7 +78,6 @@ public class PlayerStatusFacade {
     private PlayerClass createPlayerClass(String name, String description) {
         return PlayerClass.builder()
                 .className(name)
-                .classIcon("")
                 .classDescription(description)
                 .build();
     }
@@ -86,7 +85,6 @@ public class PlayerStatusFacade {
     private PlayerRace createPlayerRace(String name, String description) {
         return PlayerRace.builder()
                 .raceName(name)
-                .raceIcon("")
                 .raceDescription(description)
                 .build();
     }
@@ -241,11 +239,11 @@ public class PlayerStatusFacade {
         playerInRoom(playerStatusDto.playerInRoom, "change first race in this room because you are not in it");
         raceExist(raceId);
 
-        if(!playerStatusDto.isTwoRaces() && raceId != 0){
+        if(!playerStatusDto.isTwoRaces() && raceId != 1L){
             playerStatusDto.setTwoRaces(true);
-        } if(raceId == 0){
+        } if(raceId == 1L){
             playerStatusDto.setTwoRaces(false);
-            playerStatusDto.setSecondRaceId(0L);
+            playerStatusDto.setSecondRaceId(1L);
         }
 
         playerStatusDto.setRaceId(raceId);
@@ -270,11 +268,11 @@ public class PlayerStatusFacade {
         playerInRoom(playerStatusDto.playerInRoom, "change first class in this room because you are not in it");
         classExist(classId);
 
-        if(!playerStatusDto.isTwoClasses() && classId != 0){
+        if(!playerStatusDto.isTwoClasses() && classId != 1L){
             playerStatusDto.setTwoClasses(true);
-        } if(classId == 0){
+        } if(classId == 1L){
             playerStatusDto.setTwoClasses(false);
-            playerStatusDto.setSecondClassId(0L);
+            playerStatusDto.setSecondClassId(1L);
         }
 
         playerStatusDto.setClassId(classId);
